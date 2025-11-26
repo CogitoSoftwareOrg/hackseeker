@@ -84,7 +84,7 @@
 	{#if expanded}
 		<a href="/app" class="flex items-center gap-2">
 			<Heart class="size-6 text-primary" />
-			<span class="font-semibold">MVP Template</span>
+			<span class="font-semibold">HackSeeker</span>
 		</a>
 	{/if}
 {/snippet}

@@ -75,7 +75,7 @@
 		<div class="mb-4 inline-flex items-center justify-center rounded-full bg-primary/10 p-3">
 			<Heart class="h-8 w-8 text-primary" />
 		</div>
-		<h1 class="mb-2 text-3xl font-bold text-base-content">Welcome to MVP Template</h1>
+		<h1 class="mb-2 text-3xl font-bold text-base-content">Welcome to HackSeeker</h1>
 		<p class="text-base text-base-content/70">
 			Begin your journey of
 			<span class="font-semibold text-primary">building your next big thing</span>

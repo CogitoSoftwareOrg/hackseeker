@@ -28,7 +28,7 @@
 							></div>
 						</div>
 						<span class="bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent"
-							>MVP Template</span
+							>HackSeeker</span
 						>
 					</a>
 
@@ -79,9 +79,9 @@
 			<aside>
 				<div class="mb-2 flex items-center gap-2 font-bold">
 					<Heart class="size-5 text-primary" />
-					<span>MVP Template</span>
+					<span>HackSeeker</span>
 				</div>
-				<p class="text-base-content/60">© 2025 MVP Template. All rights reserved.</p>
+				<p class="text-base-content/60">© 2025 HackSeeker. All rights reserved.</p>
 			</aside>
 		</footer>
 	</div>
@@ -98,7 +98,7 @@
 					<Heart class="h-6 w-6 text-primary" />
 					<span
 						class="bg-linear-to-r from-primary to-secondary bg-clip-text text-xl font-black text-transparent"
-						>MVP Template</span
+						>HackSeeker</span
 					>
 				</div>
 				<label for="mobile-drawer" class="btn btn-square btn-ghost btn-sm">

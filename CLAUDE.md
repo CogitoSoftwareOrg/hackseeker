@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a SvelteKit-based MVP template with PocketBase backend, featuring AI chat capabilities, vector search, and subscription management. The application is containerized and includes Progressive Web App (PWA) capabilities.
+This is a SvelteKit-based HackSeeker with PocketBase backend, featuring AI chat capabilities, vector search, and subscription management. The application is containerized and includes Progressive Web App (PWA) capabilities.
 
 ## Development Commands
 
@@ -190,7 +190,7 @@ Located in `src/lib/shared/ui/`:
 Configured in `vite.config.ts` with `@vite-pwa/sveltekit`:
 
 - Service worker generated automatically
-- App name: "MVP template"
+- App name: "HackSeeker"
 - Start URL: `/app`
 - Caching strategies for pages, assets, and images
 
