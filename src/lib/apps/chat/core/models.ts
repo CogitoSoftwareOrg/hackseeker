@@ -1,4 +1,10 @@
-import type { ChatExpand, ChatsResponse, MessagesResponse } from '$lib';
+import {
+	PainsStatusOptions,
+	type ChatExpand,
+	type ChatsResponse,
+	type MessagesResponse
+} from '$lib';
+import type { WorkflowMode } from '$lib/apps/brain/core';
 
 export type Sender = {
 	id: string;
@@ -29,10 +35,15 @@ export type OpenAIMessage = {
 	tool_call_args?: Record<string, unknown>;
 };
 export class Chat {
-	constructor(public readonly data: ChatsResponse<ChatExpand>) {}
+	constructor(
+		public readonly data: ChatsResponse<ChatExpand>,
+		public readonly mode: WorkflowMode
+	) {}
 
 	static fromResponse(res: ChatsResponse<ChatExpand>): Chat {
-		return new Chat(res);
+		const pains = res.expand?.pains_via_chats || [];
+		const validationPains = pains.filter((pain) => pain.status === PainsStatusOptions.validation);
+		return new Chat(res, validationPains.length > 0 ? 'validation' : 'discovery');
 	}
 
 	getMessages(): MessagesResponse[] {

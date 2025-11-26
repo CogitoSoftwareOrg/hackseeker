@@ -4,27 +4,29 @@ import type { OpenAIMessage } from '$lib/apps/chat/core';
 import type { MemporyGetResult } from '$lib/apps/memory/core';
 import { grok, LLMS } from '$lib/shared/server';
 
-import type { Planner, Tool, ToolCall, WorkflowMode } from '../../core';
-
-import { DISCOVERY_PLANNER_PROMPT, VALIDATION_PLANNER_PROMPT } from './prompts';
+import type { Planner, Tool, ToolCall } from '../../core';
 
 const PLANNER_MODEL = LLMS.GROK_4_1_FAST;
+const PLANNER_PROMPT = `
+You are an expert planner.
+Your goal is to analyze the conversation history and memory to determine if any tools need to be executed to fulfill the user's request.
+You have access to specific tools for searching and saving memories.
+If the user asks for information that might be in memory, use the search tool.
+If the user provides important information that should be remembered, use the save tool.
+If no tools are needed, return an empty list of tool calls.
+Do not answer the user directly; your only output is the list of tool calls.
+`;
 
-export class SimplePlanner implements Planner {
+export class DiscoveryPlanner implements Planner {
 	constructor() {}
 
-	async plan(
-		history: OpenAIMessage[],
-		memo: MemporyGetResult,
-		tools: Tool[],
-		mode: WorkflowMode
-	): Promise<ToolCall[]> {
+	async plan(history: OpenAIMessage[], memo: MemporyGetResult, tools: Tool[]): Promise<ToolCall[]> {
 		const messages: OpenAIMessage[] = [];
 
 		// 1. System Prompt
 		messages.push({
 			role: 'system',
-			content: mode === 'discovery' ? DISCOVERY_PLANNER_PROMPT : VALIDATION_PLANNER_PROMPT
+			content: PLANNER_PROMPT
 		});
 
 		// 2. Memory Context (as System/Context)

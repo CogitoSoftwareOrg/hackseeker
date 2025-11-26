@@ -3,7 +3,7 @@ import { pb, type UsersResponse, type UserExpand, Collections } from '$lib';
 export async function globalUserLoad() {
 	console.log('globalUserLoad', pb.authStore.isValid);
 	if (!pb.authStore.isValid) {
-		return { user: null, sub: null, chats: [] };
+		return { user: null, sub: null, chats: [], pains: [] };
 	}
 
 	const res = await pb.collection(Collections.Users).authRefresh({ expand: 'subs_via_user' });
@@ -14,6 +14,10 @@ export async function globalUserLoad() {
 		filter: `user = "${user.id}"`,
 		sort: '-created'
 	});
+	const pains = await pb.collection(Collections.Pains).getFullList({
+		filter: `user = "${user.id}"`,
+		sort: '-created'
+	});
 
-	return { user, sub, chats };
+	return { user, sub, chats, pains };
 }

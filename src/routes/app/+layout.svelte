@@ -10,6 +10,7 @@
 	import { ChatsStatusOptions } from '$lib';
 
 	import Splash from './Splash.svelte';
+	import { painsStore } from '$lib/apps/pain/client';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
@@ -27,10 +28,11 @@
 	const currentChat = $derived(chats.find((c) => c.id === currentChatId));
 
 	$effect(() => {
-		globalPromise.then(({ user, sub, chats }) => {
+		globalPromise.then(({ user, sub, chats, pains }) => {
 			if (user) userStore.user = user;
 			if (sub) subStore.sub = sub;
 			if (chats) chatsStore.set(chats);
+			if (pains) painsStore.set(pains);
 		});
 	});
 
@@ -39,9 +41,11 @@
 		if (!userId) return;
 		userStore.subscribe(userId);
 		chatsStore.subscribe(userId);
+		painsStore.subscribe(userId);
 		return () => {
 			userStore.unsubscribe();
 			chatsStore.unsubscribe();
+			painsStore.unsubscribe();
 		};
 	});
 

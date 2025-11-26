@@ -1,5 +1,7 @@
 import { zodFunction } from 'openai/helpers/zod.js';
 
+export type WorkflowMode = 'discovery' | 'validation';
+
 export type ToolCall = {
 	id: string;
 	name: string;

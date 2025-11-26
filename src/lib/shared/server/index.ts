@@ -6,3 +6,4 @@ export * from './voyage';
 export * from './tg';
 export * from './stripe';
 export * from './di';
+export * from './firecrawl';

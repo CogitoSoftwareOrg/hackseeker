@@ -6,6 +6,7 @@ import type {
 	MemoryPutCmd,
 	ProfileType
 } from '$lib/apps/memory/core';
+import type { PainApp, PainCreateCmd, PainUpdateCmd } from '$lib/apps/pain/core';
 
 import type { BrainApp, BrainRunCmd, Planner, Synthesizer } from '../core';
 
@@ -15,7 +16,8 @@ export class BrainAppImpl implements BrainApp {
 	constructor(
 		private readonly planner: Planner,
 		private readonly synthesizer: Synthesizer,
-		private readonly memoryApp: MemoryApp
+		private readonly memoryApp: MemoryApp,
+		private readonly painApp: PainApp
 	) {}
 
 	async run(cmd: BrainRunCmd): Promise<string> {
@@ -32,10 +34,17 @@ export class BrainAppImpl implements BrainApp {
 		console.log('Brain.prepare started');
 		const { history, memo } = cmd;
 
-		const toolCalls = await this.planner.plan(history, memo, [
-			this.memoryApp.searchTool,
-			this.memoryApp.putTool
-		]);
+		const tools =
+			cmd.mode === 'discovery'
+				? [
+						this.memoryApp.searchTool,
+						this.memoryApp.putTool,
+						this.painApp.createTool,
+						this.painApp.updateTool
+					]
+				: [this.memoryApp.searchTool, this.memoryApp.putTool, this.painApp.updateTool];
+
+		const toolCalls = await this.planner.plan(history, memo, tools, cmd.mode);
 
 		console.log(`Planner returned ${toolCalls.length} tool calls`);
 
@@ -117,6 +126,23 @@ export class BrainAppImpl implements BrainApp {
 					content: 'Memory saved successfully!',
 					tool_call_id: toolCall.id
 				});
+			} else if (toolCall.name === this.painApp.createTool.function.name) {
+				console.log(`Pain create tool called with pain: ${JSON.stringify(toolCall.args)}`);
+				const dto: PainCreateCmd = {
+					chatId: cmd.chatId,
+					segment: toolCall.args.segment as string,
+					problem: toolCall.args.problem as string,
+					jtbd: toolCall.args.jtbd as string,
+					keywords: toolCall.args.keywords as string[]
+				};
+				await this.painApp.create(dto);
+			} else if (toolCall.name === this.painApp.updateTool.function.name) {
+				console.log(`Pain update tool called with pain: ${JSON.stringify(toolCall.args)}`);
+				const dto: PainUpdateCmd = {
+					id: toolCall.args.id as string,
+					...toolCall.args
+				};
+				await this.painApp.update(dto);
 			}
 		}
 

@@ -3,6 +3,7 @@ import { zodFunction } from 'openai/helpers/zod.js';
 
 import type { Tool } from '$lib/apps/brain/core';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
+import type { PainApp } from '$lib/apps/pain/core';
 
 import {
 	type MemoryGetCmd,
@@ -20,7 +21,7 @@ import {
 } from '../core';
 
 const DAYS_TO_SEARCH_LATEST_MEMORIES = 7;
-// const STATIC_TOKEN_LIMIT = 2000;
+const STATIC_TOKEN_LIMIT = 2000;
 
 export class MemoryAppImpl implements MemoryApp {
 	searchTool: Tool;
@@ -28,7 +29,10 @@ export class MemoryAppImpl implements MemoryApp {
 	constructor(
 		// ADAPTERS
 		private readonly profileIndexer: ProfileIndexer,
-		private readonly eventIndexer: EventIndexer
+		private readonly eventIndexer: EventIndexer,
+
+		// APPS
+		private readonly painApp: PainApp
 	) {
 		this.searchTool = zodFunction({
 			name: 'search_memories',
@@ -64,8 +68,8 @@ export class MemoryAppImpl implements MemoryApp {
 		console.log('Getting memories for chat: ', cmd.chatId);
 
 		// STATIC
-		// const staticMemories = await this.getStaticMemories(cmd.chatId, STATIC_TOKEN_LIMIT, cmd.userId);
-		// cmd.tokens -= staticMemories.reduce((acc, mem) => acc + mem.tokens, 0);
+		const staticMemories = await this.getStaticMemories(cmd.chatId, STATIC_TOKEN_LIMIT);
+		cmd.tokens -= staticMemories.reduce((acc, mem) => acc + mem.tokens, 0);
 
 		// PROFILE
 		const profileMemories = await this.getProfilesMemories(
@@ -135,11 +139,24 @@ export class MemoryAppImpl implements MemoryApp {
 		}
 	}
 
-	private async getStaticMemories() // chatId: string,
-	// tokens: number,
-	// characterIds: string[]
-	: Promise<StaticMemory[]> {
-		return [];
+	private async getStaticMemories(chatId: string, tokens: number): Promise<StaticMemory[]> {
+		let remainingTokens = tokens;
+		const pains = await this.painApp.getByChatId(chatId);
+		const staticMemories: StaticMemory[] = [];
+		for (const pain of pains) {
+			const painTokens = TOKENIZERS[LLMS.GROK_4_FAST].encode(pain.prompt).length;
+			if (remainingTokens < painTokens) {
+				console.warn('Not enough tokens to add pain', pain);
+				break;
+			}
+			remainingTokens -= painTokens;
+			staticMemories.push({
+				kind: 'static',
+				content: pain.prompt,
+				tokens: painTokens
+			});
+		}
+		return staticMemories;
 	}
 
 	private async getChatMemories(

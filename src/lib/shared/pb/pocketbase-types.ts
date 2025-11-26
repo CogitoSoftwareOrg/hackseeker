@@ -11,12 +11,15 @@ export enum Collections {
 	Mfas = "_mfas",
 	Otps = "_otps",
 	Superusers = "_superusers",
+	Artifacts = "artifacts",
 	Chats = "chats",
 	Events = "events",
 	Feedbacks = "feedbacks",
 	JobRuns = "jobRuns",
 	Jobs = "jobs",
 	Messages = "messages",
+	Pains = "pains",
+	SearchQueries = "searchQueries",
 	Subs = "subs",
 	Users = "users",
 }
@@ -99,6 +102,25 @@ export type SuperusersRecord = {
 	verified?: boolean
 }
 
+export enum ArtifactsTypeOptions {
+	"quote" = "quote",
+	"insight" = "insight",
+	"competitor" = "competitor",
+	"hack" = "hack",
+}
+export type ArtifactsRecord<Tpayload = unknown> = {
+	created: IsoAutoDateString
+	file?: FileNameString
+	id: string
+	pain: RecordIdString
+	payload: null | Tpayload
+	searchQuery: RecordIdString
+	source: string
+	title?: string
+	type: ArtifactsTypeOptions
+	updated: IsoAutoDateString
+}
+
 export enum ChatsStatusOptions {
 	"empty" = "empty",
 	"going" = "going",
@@ -172,6 +194,7 @@ export type JobsRecord<Targs = unknown> = {
 	enabled?: IsoDateString
 	id: string
 	lastRun?: RecordIdString
+	locked?: IsoDateString
 	maxAttempts?: number
 	nextRun?: IsoDateString
 	task: JobsTaskOptions
@@ -199,6 +222,44 @@ export type MessagesRecord<Tmetadata = unknown> = {
 	metadata?: null | Tmetadata
 	role: MessagesRoleOptions
 	status: MessagesStatusOptions
+	updated: IsoAutoDateString
+}
+
+export enum PainsStatusOptions {
+	"draft" = "draft",
+	"validation" = "validation",
+}
+export type PainsRecord<Tkeywords = unknown, Tmetrics = unknown> = {
+	chats?: RecordIdString[]
+	created: IsoAutoDateString
+	id: string
+	jtbd?: string
+	keywords?: null | Tkeywords
+	metrics?: null | Tmetrics
+	problem?: string
+	segment?: string
+	status: PainsStatusOptions
+	updated: IsoAutoDateString
+	user?: RecordIdString
+}
+
+export enum SearchQueriesTypeOptions {
+	"problemDiscovery" = "problemDiscovery",
+	"solutionTools" = "solutionTools",
+	"diyHacks" = "diyHacks",
+	"comparisonListicles" = "comparisonListicles",
+	"communityPain" = "communityPain",
+	"communitySolutions" = "communitySolutions",
+	"launchExamples" = "launchExamples",
+	"general" = "general",
+}
+export type SearchQueriesRecord = {
+	created: IsoAutoDateString
+	id: string
+	offset?: number
+	pain?: RecordIdString
+	query?: string
+	type?: SearchQueriesTypeOptions
 	updated: IsoAutoDateString
 }
 
@@ -257,12 +318,15 @@ export type ExternalauthsResponse<Texpand = unknown> = Required<ExternalauthsRec
 export type MfasResponse<Texpand = unknown> = Required<MfasRecord> & BaseSystemFields<Texpand>
 export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemFields<Texpand>
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
+export type ArtifactsResponse<Tpayload = unknown, Texpand = unknown> = Required<ArtifactsRecord<Tpayload>> & BaseSystemFields<Texpand>
 export type ChatsResponse<Texpand = unknown> = Required<ChatsRecord> & BaseSystemFields<Texpand>
 export type EventsResponse<Tmetadata = unknown, Texpand = unknown> = Required<EventsRecord<Tmetadata>> & BaseSystemFields<Texpand>
 export type FeedbacksResponse<Texpand = unknown> = Required<FeedbacksRecord> & BaseSystemFields<Texpand>
 export type JobRunsResponse<Tresult = unknown, Texpand = unknown> = Required<JobRunsRecord<Tresult>> & BaseSystemFields<Texpand>
 export type JobsResponse<Targs = unknown, Texpand = unknown> = Required<JobsRecord<Targs>> & BaseSystemFields<Texpand>
 export type MessagesResponse<Tmetadata = unknown, Texpand = unknown> = Required<MessagesRecord<Tmetadata>> & BaseSystemFields<Texpand>
+export type PainsResponse<Tkeywords = unknown, Tmetrics = unknown, Texpand = unknown> = Required<PainsRecord<Tkeywords, Tmetrics>> & BaseSystemFields<Texpand>
+export type SearchQueriesResponse<Texpand = unknown> = Required<SearchQueriesRecord> & BaseSystemFields<Texpand>
 export type SubsResponse<Texpand = unknown> = Required<SubsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -274,12 +338,15 @@ export type CollectionRecords = {
 	_mfas: MfasRecord
 	_otps: OtpsRecord
 	_superusers: SuperusersRecord
+	artifacts: ArtifactsRecord
 	chats: ChatsRecord
 	events: EventsRecord
 	feedbacks: FeedbacksRecord
 	jobRuns: JobRunsRecord
 	jobs: JobsRecord
 	messages: MessagesRecord
+	pains: PainsRecord
+	searchQueries: SearchQueriesRecord
 	subs: SubsRecord
 	users: UsersRecord
 }
@@ -290,12 +357,15 @@ export type CollectionResponses = {
 	_mfas: MfasResponse
 	_otps: OtpsResponse
 	_superusers: SuperusersResponse
+	artifacts: ArtifactsResponse
 	chats: ChatsResponse
 	events: EventsResponse
 	feedbacks: FeedbacksResponse
 	jobRuns: JobRunsResponse
 	jobs: JobsResponse
 	messages: MessagesResponse
+	pains: PainsResponse
+	searchQueries: SearchQueriesResponse
 	subs: SubsResponse
 	users: UsersResponse
 }

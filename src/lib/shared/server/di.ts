@@ -4,6 +4,7 @@ import type { EdgeApp } from '$lib/apps/edge/core';
 import type { MemoryApp } from '$lib/apps/memory/core';
 import type { BrainApp } from '$lib/apps/brain/core';
 import type { JobApp } from '$lib/apps/job/core';
+import type { PainApp } from '$lib/apps/pain/core';
 
 import { getUserApp } from '$lib/apps/user/di';
 import { getChatApp } from '$lib/apps/chat/di';
@@ -11,6 +12,7 @@ import { getEdgeApp } from '$lib/apps/edge/di';
 import { getMemoryApp } from '$lib/apps/memory/di';
 import { getBrainApp } from '$lib/apps/brain/di';
 import { getJobApp } from '$lib/apps/job/di';
+import { getPainApp } from '$lib/apps/pain/di';
 
 export type DI = {
 	user: UserApp;
@@ -19,6 +21,7 @@ export type DI = {
 	memory: MemoryApp;
 	brain: BrainApp;
 	job: JobApp;
+	pain: PainApp;
 };
 
 let di: DI | null = null;
@@ -32,6 +35,7 @@ export const getDI = () => {
 	const chatApp = getChatApp(memoryApp, brainApp);
 	const edgeApp = getEdgeApp(userApp, chatApp);
 	const jobApp = getJobApp();
+	const painApp = getPainApp();
 
 	di = {
 		user: userApp,
@@ -39,7 +43,8 @@ export const getDI = () => {
 		edge: edgeApp,
 		memory: memoryApp,
 		brain: brainApp,
-		job: jobApp
+		job: jobApp,
+		pain: painApp
 	};
 
 	return di;

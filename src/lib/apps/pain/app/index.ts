@@ -1,0 +1,1 @@
+export { PainAppImpl } from './usecases';

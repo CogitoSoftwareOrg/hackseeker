@@ -29,13 +29,14 @@ export class ChatAppImpl implements ChatApp {
 	) {}
 
 	async run(cmd: SendUserMessageCmd): Promise<string> {
-		const { aiMsg, history, memo } = await this.prepare(cmd);
+		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
 
 		const content = await this.brainApp.run({
 			history,
 			memo,
 			profileId: cmd.principal.user.id,
-			chatId: cmd.chatId
+			chatId: cmd.chatId,
+			mode: chat.mode
 		});
 
 		await this.postProcess(aiMsg.id, content);
@@ -43,7 +44,7 @@ export class ChatAppImpl implements ChatApp {
 	}
 
 	async runStream(cmd: SendUserMessageCmd): Promise<ReadableStream> {
-		const { aiMsg, history, memo } = await this.prepare(cmd);
+		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
 		const postProcess = this.postProcess;
 		const brainApp = this.brainApp;
 		const encoder = new TextEncoder();
@@ -62,7 +63,8 @@ export class ChatAppImpl implements ChatApp {
 						history,
 						memo,
 						profileId: cmd.principal.user.id,
-						chatId: cmd.chatId
+						chatId: cmd.chatId,
+						mode: chat.mode
 					});
 
 					const reader = stream.getReader();
@@ -136,7 +138,7 @@ export class ChatAppImpl implements ChatApp {
 			tokens: INITIAL_MEMORY_TOKENS
 		});
 
-		return { aiMsg, history, memo };
+		return { chat, aiMsg, history, memo };
 	}
 
 	private async postProcess(aiMsgId: string, content: string) {

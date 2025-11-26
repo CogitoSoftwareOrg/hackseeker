@@ -2,6 +2,7 @@ import type {
 	JobRunsResponse,
 	JobsResponse,
 	MessagesResponse,
+	PainsResponse,
 	SubsResponse
 } from './pocketbase-types';
 
@@ -10,6 +11,7 @@ export type MessageExpand = unknown | undefined;
 export type ChatExpand =
 	| {
 			messages_via_chat: MessagesResponse[] | undefined;
+			pains_via_chats: PainsResponse[] | undefined;
 	  }
 	| undefined;
 
