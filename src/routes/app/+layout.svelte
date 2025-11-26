@@ -107,6 +107,7 @@
 
 	<div class="flex-1 overflow-y-auto px-2">
 		<ul class="menu w-full gap-1">
+			<li class="menu-title">Chats</li>
 			{#each chats as chat (chat.id)}
 				<li class="w-full">
 					<a

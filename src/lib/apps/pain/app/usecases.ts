@@ -3,6 +3,8 @@ import { zodFunction } from 'openai/helpers/zod.js';
 
 import { Collections, PainsStatusOptions, pb, type PainsResponse } from '$lib/shared';
 import type { Tool } from '$lib/apps/brain/core';
+import type { SearchApp } from '$lib/apps/search/core';
+import type { ArtifactApp } from '$lib/apps/artifact/core';
 
 import {
 	Pain,
@@ -17,7 +19,10 @@ export class PainAppImpl implements PainApp {
 	createTool: Tool;
 	updateTool: Tool;
 
-	constructor() {
+	constructor(
+		private readonly searchApp: SearchApp,
+		private readonly artifactApp: ArtifactApp
+	) {
 		this.createTool = zodFunction({
 			name: 'create_pain',
 			description: 'Create a new pain draft',
@@ -49,6 +54,28 @@ export class PainAppImpl implements PainApp {
 					.nullable()
 			})
 		});
+	}
+
+	async startValidation(painId: string): Promise<Pain> {
+		const painRec: PainsResponse<PainKeywords, PainMetrics> = await pb
+			.collection(Collections.Pains)
+			.update(painId, { status: PainsStatusOptions.validation });
+		const pain = Pain.fromResponse(painRec);
+
+		const queries = await this.searchApp.generateQueries(painId, pain.prompt);
+		const results = await this.searchApp.searchQueries(queries);
+
+		await Promise.all(
+			results.map(async (result) =>
+				this.artifactApp.extract({
+					painId,
+					searchQueryId: result[0].id,
+					dtos: result
+				})
+			)
+		);
+
+		return pain;
 	}
 
 	async getByChatId(chatId: string): Promise<Pain[]> {

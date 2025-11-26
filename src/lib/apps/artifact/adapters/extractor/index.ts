@@ -1,0 +1,1 @@
+export { SimpleExtractor } from './simpleExtractor';

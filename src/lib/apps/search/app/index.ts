@@ -1,0 +1,1 @@
+export { SearchAppImpl } from './usecases';

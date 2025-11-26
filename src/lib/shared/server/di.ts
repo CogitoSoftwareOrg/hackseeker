@@ -13,6 +13,8 @@ import { getMemoryApp } from '$lib/apps/memory/di';
 import { getBrainApp } from '$lib/apps/brain/di';
 import { getJobApp } from '$lib/apps/job/di';
 import { getPainApp } from '$lib/apps/pain/di';
+import { getSearchApp } from '$lib/apps/search/di';
+import { getArtifactApp } from '$lib/apps/artifact/di';
 
 export type DI = {
 	user: UserApp;
@@ -29,8 +31,11 @@ let di: DI | null = null;
 export const getDI = () => {
 	if (di) return di;
 
+	const searchApp = getSearchApp();
+	const artifactApp = getArtifactApp();
+
 	const userApp = getUserApp();
-	const painApp = getPainApp();
+	const painApp = getPainApp(searchApp, artifactApp);
 
 	const memoryApp = getMemoryApp(painApp);
 	const brainApp = getBrainApp(memoryApp, painApp);

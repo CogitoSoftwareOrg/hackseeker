@@ -30,4 +30,6 @@ export interface PainApp {
 	getById(id: string): Promise<Pain>;
 	create(cmd: PainCreateCmd): Promise<Pain>;
 	update(cmd: PainUpdateCmd): Promise<Pain>;
+
+	startValidation(painId: string): Promise<Pain>;
 }

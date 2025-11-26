@@ -1,0 +1,1 @@
+export { MeiliArtifactIndexer } from './meiliIndexer';
