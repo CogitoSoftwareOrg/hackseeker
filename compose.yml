@@ -1,0 +1,27 @@
+name: mvp-tmpl
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ENV=production
+      - PUBLIC_PB_URL=${PUBLIC_PB_URL:-https://mvp-pb.cogitosoftware.nl}
+      - MEILI_URL=${MEILI_URL:-https://mvp-meili.cogitosoftware.nl}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-ec076b61-09a8-40d4-9857-8bce360e67e0}
+      - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-https://us.cloud.langfuse.com}
+      - PUBLIC_POSTHOG=${PUBLIC_POSTHOG}
+
+      # SECRETS
+      - PB_EMAIL=${PB_EMAIL}
+      - PB_PASSWORD=${PB_PASSWORD}
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - VOYAGE_API_KEY=${VOYAGE_API_KEY}
+      - GROK_API_KEY=${GROK_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - TG_ID=${TG_ID}
+      - TG_TOKEN=${TG_TOKEN}

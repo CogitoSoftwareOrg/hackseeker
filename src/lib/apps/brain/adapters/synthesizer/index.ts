@@ -1,0 +1,1 @@
+export { SimpleSynthesizer } from './simpleSynthesizer';

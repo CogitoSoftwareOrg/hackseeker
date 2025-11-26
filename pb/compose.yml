@@ -1,0 +1,12 @@
+name: mvp-tmpl-pb
+
+services:
+  pb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PB_EMAIL=${PB_EMAIL}
+      - PB_PASSWORD=${PB_PASSWORD}
+    volumes:
+      - ./pb_data:/pb/pb_data

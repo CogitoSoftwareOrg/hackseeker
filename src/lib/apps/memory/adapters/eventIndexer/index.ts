@@ -1,0 +1,1 @@
+export { MeiliEventIndexer } from './meiliEventIndexer';

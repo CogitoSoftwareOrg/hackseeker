@@ -1,0 +1,21 @@
+name: mvp-tmpl-meili
+
+services:
+  meili:
+    image: getmeili/meilisearch:latest
+    volumes:
+      - ./data:/meili_data
+    environment:
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+      - 'MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-true}'
+      - 'MEILI_ENV=${MEILI_ENV:-production}'
+      - SERVICE_URL_MEILISEARCH_7700
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://127.0.0.1:7700/health'
+      interval: 2s
+      timeout: 10s
+      retries: 15
