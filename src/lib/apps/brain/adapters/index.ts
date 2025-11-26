@@ -1,2 +1,2 @@
-export { SimplePlanner } from './planner';
+export { DiscoveryAgent, ValidationAgent } from './agent';
 export { SimpleSynthesizer } from './synthesizer';

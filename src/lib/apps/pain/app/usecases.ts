@@ -19,17 +19,19 @@ export class PainAppImpl implements PainApp {
 
 	constructor() {
 		this.createTool = zodFunction({
-			name: 'create_pain_draft',
+			name: 'create_pain',
 			description: 'Create a new pain draft',
 			parameters: z.object({
-				segment: z.string().describe('The segment of the pain.'),
-				problem: z.string().describe('The problem exprienced by the segment.'),
-				jtbd: z.string().describe('The job to be done for the segment'),
+				segment: z.string().describe('The segment of the pain. 1-3 words max.'),
+				problem: z
+					.string()
+					.describe('The problem exprienced by the segment. 1 small sentence max.'),
+				jtbd: z.string().describe('The job to be done for the segment. 1 small sentence max.'),
 				keywords: z.array(z.string()).describe('The keywords to search for the pain')
 			})
 		});
 		this.updateTool = zodFunction({
-			name: 'update_pain_draft',
+			name: 'update_pain',
 			description: 'Update a pain draft',
 			parameters: z.object({
 				id: z.string().describe('The id of the pain'),
@@ -53,7 +55,7 @@ export class PainAppImpl implements PainApp {
 		const recs: PainsResponse<PainKeywords, PainMetrics>[] = await pb
 			.collection(Collections.Pains)
 			.getFullList({
-				filter: `chats ?= "${chatId}"`
+				filter: `chats ?= "${chatId}" && archived = null`
 			});
 		return recs.map(Pain.fromResponse);
 	}
@@ -68,7 +70,7 @@ export class PainAppImpl implements PainApp {
 	async create(cmd: PainCreateCmd) {
 		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
 			.collection(Collections.Pains)
-			.create({ ...cmd, status: PainsStatusOptions.draft, chats: [cmd.chatId] });
+			.create({ ...cmd, status: PainsStatusOptions.draft, chats: [cmd.chatId], user: cmd.userId });
 		return Pain.fromResponse(rec);
 	}
 

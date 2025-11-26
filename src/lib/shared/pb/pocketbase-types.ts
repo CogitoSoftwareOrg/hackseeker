@@ -230,6 +230,7 @@ export enum PainsStatusOptions {
 	"validation" = "validation",
 }
 export type PainsRecord<Tkeywords = unknown, Tmetrics = unknown> = {
+	archived?: IsoDateString
 	chats?: RecordIdString[]
 	created: IsoAutoDateString
 	id: string

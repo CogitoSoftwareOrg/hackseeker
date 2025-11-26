@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { Plus, Settings, Heart, MessageSquare, Menu, PanelRight } from 'lucide-svelte';
 
-	import { chatApi, chatsStore } from '$lib/apps/chat/client';
+	import { chatApi, chatsStore, ChatHeader } from '$lib/apps/chat/client';
 	import { uiStore, swipeable } from '$lib/shared/ui';
 	import { userStore, subStore, FeedbackForm } from '$lib/apps/user/client';
 	import { Button, Modal, ThemeController, AuthWall, Paywall, Sidebar } from '$lib/shared/ui';
@@ -210,39 +210,27 @@
 		}}
 	>
 		<!-- Mobile Header -->
-		<header
-			class="flex h-10 shrink-0 items-center justify-between border-b border-base-300 px-2 md:hidden"
-		>
-			<Button
-				color="neutral"
-				circle
-				size="sm"
-				onclick={() => uiStore.setSidebarOpen(true)}
-				variant="ghost"
+		{#if isChatPage && currentChat}
+			<div class="md:hidden">
+				<ChatHeader chatId={currentChat.id} />
+			</div>
+		{:else}
+			<header
+				class="flex h-10 shrink-0 items-center justify-between border-b border-base-300 px-2 md:hidden"
 			>
-				<Menu class="size-6" />
-			</Button>
-
-			{#if isChatPage && currentChat}
-				<h1 class="truncate px-2 text-sm font-semibold">{currentChat.title || 'New Chat'}</h1>
-			{:else}
-				<span></span>
-			{/if}
-
-			{#if isChatPage}
 				<Button
 					color="neutral"
 					circle
 					size="sm"
-					onclick={() => uiStore.toggleRightSidebar()}
+					onclick={() => uiStore.setSidebarOpen(true)}
 					variant="ghost"
 				>
-					<PanelRight class="size-5" />
+					<Menu class="size-6" />
 				</Button>
-			{:else}
 				<span></span>
-			{/if}
-		</header>
+				<span></span>
+			</header>
+		{/if}
 
 		<!-- Sidebar -->
 		<Sidebar

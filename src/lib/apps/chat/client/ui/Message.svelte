@@ -61,7 +61,7 @@
 	</div>
 
 	<!-- Message Content -->
-	<div class={['flex max-w-full flex-col', incoming ? 'items-start' : 'items-end']}>
+	<div class={['flex min-w-0 max-w-full flex-col', incoming ? 'items-start' : 'items-end']}>
 		<!-- Header (Name) -->
 		{#if showHeader}
 			<div class="mb-1 flex items-center gap-2 px-1">
@@ -82,7 +82,7 @@
 		<!-- Bubble -->
 		<div
 			class={[
-				'relative prose overflow-hidden rounded-2xl px-3 py-3 text-base leading-relaxed shadow-sm transition-all',
+				'relative prose min-w-0 max-w-full overflow-hidden rounded-2xl px-3 py-3 text-base leading-relaxed shadow-sm transition-all',
 				incoming
 					? 'rounded-tl-none bg-base-200 text-base-content'
 					: 'rounded-tr-none bg-primary text-primary-content',
@@ -96,7 +96,12 @@
 				// <pre> + <code> внутри
 				'[&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-3',
 				'[&_pre]:bg-base-300 [&_pre]:text-base-content', // нормальный контраст
-				'[&_pre_code]:bg-transparent [&_pre_code]:text-base-content'
+				'[&_pre_code]:bg-transparent [&_pre_code]:text-base-content',
+
+				// Таблицы: делаем scrollable в рамках сообщения
+				'[&_table]:my-2 [&_table]:border-collapse [&_table]:w-full',
+				'[&_table_th]:border [&_table_th]:border-base-300 [&_table_th]:px-2 [&_table_th]:py-1 [&_table_th]:text-left [&_table_th]:font-semibold',
+				'[&_table_td]:border [&_table_td]:border-base-300 [&_table_td]:px-2 [&_table_td]:py-1'
 			]}
 		>
 			{#if isWaitingForResponse}
@@ -115,7 +120,9 @@
 					></span>
 				</div>
 			{:else}
-				{@html safeHtml}
+				<div class="min-w-0 max-w-full overflow-x-auto -mx-3 px-3">
+					{@html safeHtml}
+				</div>
 			{/if}
 		</div>
 	</div>

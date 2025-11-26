@@ -1,8 +1,10 @@
+import type { PainApp } from '$lib/apps/pain/core';
+
 import { MeiliProfileIndexer, MeiliEventIndexer } from './adapters';
 import { MemoryAppImpl } from './app';
 import type { MemoryApp } from './core';
 
-export const getMemoryApp = (): MemoryApp => {
+export const getMemoryApp = (painApp: PainApp): MemoryApp => {
 	const profileIndexer = new MeiliProfileIndexer();
 	const eventIndexer = new MeiliEventIndexer();
 
@@ -10,5 +12,5 @@ export const getMemoryApp = (): MemoryApp => {
 		console.log('Memory indexers migrated');
 	});
 
-	return new MemoryAppImpl(profileIndexer, eventIndexer);
+	return new MemoryAppImpl(profileIndexer, eventIndexer, painApp);
 };

@@ -4,6 +4,8 @@ import type { Pain } from './models';
 
 export type PainCreateCmd = {
 	chatId: string;
+	userId: string;
+
 	segment: string;
 	problem: string;
 	jtbd: string;

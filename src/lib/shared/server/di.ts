@@ -30,12 +30,13 @@ export const getDI = () => {
 	if (di) return di;
 
 	const userApp = getUserApp();
-	const memoryApp = getMemoryApp();
-	const brainApp = getBrainApp(memoryApp);
+	const painApp = getPainApp();
+
+	const memoryApp = getMemoryApp(painApp);
+	const brainApp = getBrainApp(memoryApp, painApp);
 	const chatApp = getChatApp(memoryApp, brainApp);
 	const edgeApp = getEdgeApp(userApp, chatApp);
 	const jobApp = getJobApp();
-	const painApp = getPainApp();
 
 	di = {
 		user: userApp,

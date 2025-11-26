@@ -40,13 +40,17 @@
 	});
 </script>
 
-<div class={[className, 'relative h-full bg-base-100']}>
+<div class={[className, 'relative h-full w-full min-w-0 bg-base-100']}>
 	<div
 		bind:this={messagesContainer}
 		{onscroll}
-		class={['flex h-full flex-col overflow-y-auto overscroll-contain scroll-smooth']}
+		class={[
+			'flex h-full w-full min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain scroll-smooth'
+		]}
 	>
-		<div class="mx-auto flex min-h-full w-full max-w-4xl flex-col space-y-3 px-2 pt-10 pb-4">
+		<div
+			class="mx-auto flex min-h-full w-full min-w-0 max-w-4xl flex-col space-y-3 px-2 pt-10 pb-4"
+		>
 			{#if messages.length === 0}
 				<div class="flex flex-1 flex-col items-center justify-center text-center opacity-50">
 					<div class="filter mb-4 text-6xl grayscale">💬</div>

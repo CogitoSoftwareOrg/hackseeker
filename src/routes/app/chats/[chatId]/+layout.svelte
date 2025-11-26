@@ -7,7 +7,7 @@
 
 	const { children } = $props();
 
-	const chatId = $derived(page.params.chatId);
+	const chatId = $derived(page.params.chatId!);
 	const rightSidebarOpen = $derived(uiStore.rightSidebarOpen);
 
 	$effect(() => {
@@ -39,8 +39,8 @@
 	</div>
 
 	<!-- Desktop Right Sidebar (always visible on desktop) -->
-	<aside class="hidden w-84 shrink-0 border-l border-base-300 md:flex md:flex-col">
-		<ChatControlPanel />
+	<aside class="hidden max-w-124 shrink-0 border-l border-base-300 md:flex md:flex-col">
+		<ChatControlPanel {chatId} />
 	</aside>
 
 	<!-- Mobile Right Sidebar Drawer -->
@@ -53,7 +53,7 @@
 		onclose={() => uiStore.setRightSidebarOpen(false)}
 	>
 		{#snippet children({ expanded })}
-			<ChatControlPanel compact />
+			<ChatControlPanel compact {chatId} />
 		{/snippet}
 	</Sidebar>
 </div>
