@@ -5,7 +5,7 @@ import { Collections, pb, type SearchQueriesResponse } from '$lib/shared';
 
 import type { SearchApp, SearchResult, QueryGenerator } from '../core';
 
-const SEARCH_LIMIT = 10;
+const SEARCH_LIMIT = 2;
 
 export class SearchAppImpl implements SearchApp {
 	constructor(private readonly queryGenerator: QueryGenerator) {}

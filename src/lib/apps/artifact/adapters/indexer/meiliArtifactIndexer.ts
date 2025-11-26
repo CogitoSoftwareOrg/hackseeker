@@ -47,7 +47,7 @@ export class MeiliArtifactIndexer implements ArtifactIndexer {
 			host: env.MEILI_URL,
 			apiKey: env.MEILI_MASTER_KEY
 		});
-		this.index = this.client.index('events');
+		this.index = this.client.index('artifacts');
 	}
 
 	async migrate(): Promise<void> {

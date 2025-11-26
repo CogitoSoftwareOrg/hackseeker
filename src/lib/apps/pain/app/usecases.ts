@@ -61,18 +61,21 @@ export class PainAppImpl implements PainApp {
 			.collection(Collections.Pains)
 			.update(painId, { status: PainsStatusOptions.validation });
 		const pain = Pain.fromResponse(painRec);
+		const userId = painRec.user;
 
 		const queries = await this.searchApp.generateQueries(painId, pain.prompt);
 		const results = await this.searchApp.searchQueries(queries);
 
 		await Promise.all(
-			results.map(async (result) =>
-				this.artifactApp.extract({
+			results.map(async (result) => {
+				if (result.length === 0) return [];
+				return this.artifactApp.extract({
+					userId,
 					painId,
 					searchQueryId: result[0].id,
 					dtos: result
-				})
-			)
+				});
+			})
 		);
 
 		return pain;

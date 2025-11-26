@@ -40,7 +40,8 @@ export const getDI = () => {
 	const memoryApp = getMemoryApp(painApp);
 	const brainApp = getBrainApp(memoryApp, painApp);
 	const chatApp = getChatApp(memoryApp, brainApp);
-	const edgeApp = getEdgeApp(userApp, chatApp);
+
+	const edgeApp = getEdgeApp(userApp, chatApp, painApp);
 	const jobApp = getJobApp();
 
 	di = {

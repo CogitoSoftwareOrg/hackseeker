@@ -18,13 +18,13 @@ export class ArtifactAppImpl implements ArtifactApp {
 	) {}
 
 	async extract(cmd: ArtifactExtractCmd): Promise<Artifact[]> {
-		const { dtos } = cmd;
+		const { userId, dtos } = cmd;
 
 		const artifacts = await Promise.all(
 			dtos.map(async (dto) => {
 				const result = await this.extractor.extract(dto.markdown);
 				const artifacts = await this.parseArtifacts(cmd.painId, cmd.searchQueryId, dto, result);
-				await this.artifactIndexer.add(artifacts);
+				await this.artifactIndexer.add(userId, artifacts);
 				return artifacts;
 			})
 		);
