@@ -1,24 +1,9 @@
-import type { Agent, BrainApp, BrainRunCmd, Synthesizer, WorkflowMode } from '../core';
+import type { Agent, BrainApp, BrainRunCmd, WorkflowMode } from '../core';
 
 export class BrainAppImpl implements BrainApp {
-	constructor(
-		private readonly agents: Record<WorkflowMode, Agent>,
-		private readonly synthesizer: Synthesizer
-	) {}
+	constructor(private readonly agents: Record<WorkflowMode, Agent>) {}
 
 	async run(cmd: BrainRunCmd): Promise<string> {
-		const { history, memo } = await this.prepare(cmd);
-		return await this.synthesizer.synthesize(history, memo);
-	}
-
-	async runStream(cmd: BrainRunCmd): Promise<ReadableStream> {
-		const { history, memo } = await this.prepare(cmd);
-		return await this.synthesizer.synthesizeStream(history, memo);
-	}
-
-	private async prepare(cmd: BrainRunCmd) {
-		console.log(`Brain.prepare started with mode: ${cmd.mode}`);
-
 		const agent = this.agents[cmd.mode];
 		const result = await agent.run({
 			profileId: cmd.profileId,
@@ -27,10 +12,18 @@ export class BrainAppImpl implements BrainApp {
 			memo: cmd.memo
 		});
 
-		console.log(
-			`Brain.prepare completed. Final memo: ${result.memo.event.length} events, ${result.memo.profile.length} profiles, ${result.memo.static.length} static`
-		);
+		// Return the last assistant message content
+		const lastMessage = result.history[result.history.length - 1];
+		return lastMessage?.content || '';
+	}
 
-		return result;
+	async runStream(cmd: BrainRunCmd): Promise<ReadableStream> {
+		const agent = this.agents[cmd.mode];
+		return agent.runStream({
+			profileId: cmd.profileId,
+			chatId: cmd.chatId,
+			history: cmd.history,
+			memo: cmd.memo
+		});
 	}
 }

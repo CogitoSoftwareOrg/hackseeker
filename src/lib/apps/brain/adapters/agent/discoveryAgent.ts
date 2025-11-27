@@ -1,26 +1,17 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
-import type {
-	EventType,
-	Importance,
-	MemoryApp,
-	MemoryGetCmd,
-	MemoryPutCmd,
-	MemporyGetResult,
-	ProfileType
-} from '$lib/apps/memory/core';
+import type { MemoryApp, MemporyGetResult } from '$lib/apps/memory/core';
 import type { PainApp, PainCreateCmd, PainUpdateCmd } from '$lib/apps/pain/core';
 import { grok, LLMS } from '$lib/shared/server';
 
 import type { Agent, AgentResult, AgentRunCmd } from '../../core';
 import type { Tool, ToolCall } from '../../core/models';
 
-import { DISCOVERY_PLANNER_PROMPT } from './prompts';
+import { DISCOVERY_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
-const MAX_LOOP_ITERATIONS = 3;
-const ADDITIONAL_MEMORY_TOKENS = 1000;
+const MAX_LOOP_ITERATIONS = 5;
 
 export class DiscoveryAgent implements Agent {
 	private readonly tools: Tool[];
@@ -29,39 +20,74 @@ export class DiscoveryAgent implements Agent {
 		private readonly memoryApp: MemoryApp,
 		private readonly painApp: PainApp
 	) {
-		this.tools = [
-			this.memoryApp.searchTool,
-			this.memoryApp.putTool,
-			this.painApp.createTool,
-			this.painApp.updateTool
-		];
+		this.tools = [this.painApp.createTool, this.painApp.updateTool];
 	}
 
 	async run(cmd: AgentRunCmd): Promise<AgentResult> {
 		const { profileId, chatId, memo } = cmd;
 		const history = [...cmd.history];
-
 		const workflowMessages = this.prepareMessages(history, memo);
 
+		// Run tool loop
+		await this.runToolLoop(workflowMessages, profileId, chatId);
+
+		// Final response (no tools)
+		const res = await grok.chat.completions.create({
+			model: AGENT_MODEL,
+			messages: workflowMessages as ChatCompletionMessageParam[],
+			stream: false
+		});
+
+		const content = res.choices[0].message.content || '';
+		history.push({ role: 'assistant', content });
+
+		return { history, memo };
+	}
+
+	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
+		const { profileId, chatId, memo } = cmd;
+		const workflowMessages = this.prepareMessages([...cmd.history], memo);
+
+		// Run tool loop first (not streamed)
+		await this.runToolLoop(workflowMessages, profileId, chatId);
+
+		// Stream only the final response
+		const res = await grok.chat.completions.create({
+			model: AGENT_MODEL,
+			messages: workflowMessages as ChatCompletionMessageParam[],
+			stream: true
+		});
+
+		return new ReadableStream({
+			async start(controller) {
+				for await (const chunk of res) {
+					const delta = chunk.choices[0]?.delta;
+					if (delta?.content) {
+						controller.enqueue(delta.content);
+					}
+				}
+				controller.close();
+			}
+		});
+	}
+
+	private async runToolLoop(
+		workflowMessages: ChatCompletionMessageParam[],
+		profileId: string,
+		chatId: string
+	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
-			const isLastIteration = i === MAX_LOOP_ITERATIONS - 1;
-			const currentTools = isLastIteration ? [] : this.tools;
-
-			console.log(`DiscoveryAgent iteration ${i + 1}/${MAX_LOOP_ITERATIONS}`);
-
 			const res = await grok.chat.completions.create({
 				model: AGENT_MODEL,
-				messages: workflowMessages as ChatCompletionMessageParam[],
+				messages: workflowMessages,
 				stream: false,
-				tools: currentTools.length > 0 ? currentTools : undefined,
-				tool_choice: currentTools.length > 0 ? 'auto' : undefined
+				tools: this.tools,
+				tool_choice: 'auto'
 			});
 
 			const message = res.choices[0].message;
-			const content = message.content || '';
 			const openaiToolCalls = message.tool_calls;
 
-			// Parse tool calls
 			const toolCalls: ToolCall[] =
 				openaiToolCalls
 					?.filter((tc): tc is Extract<typeof tc, { function: unknown }> => 'function' in tc)
@@ -71,59 +97,28 @@ export class DiscoveryAgent implements Agent {
 						args: JSON.parse(tc.function.arguments || '{}')
 					})) || [];
 
-			console.log(`DiscoveryAgent got ${toolCalls.length} tool calls`);
-
-			// If no tool calls, we're done - add final response to history
+			// No tool calls = done with loop
 			if (toolCalls.length === 0) {
-				history.push({
-					role: 'assistant',
-					content
-				});
 				break;
 			}
 
-			// Add assistant message with tool calls to workflow
+			// Add assistant message with tool calls
 			workflowMessages.push({
 				role: 'assistant',
-				content: content || null,
+				content: message.content || null,
 				tool_calls: openaiToolCalls
 			});
 
-			// Execute each tool call
+			// Execute tools and add results
 			for (const toolCall of toolCalls) {
-				const result = await this.executeTool(toolCall, profileId, chatId, memo);
-
+				const result = await this.executeTool(toolCall, profileId, chatId);
 				workflowMessages.push({
 					role: 'tool',
 					tool_call_id: toolCall.id,
 					content: result
 				});
 			}
-
-			// Also add to history for context
-			history.push({
-				role: 'assistant',
-				content: '',
-				tool_calls: toolCalls.map((tc) => ({
-					id: tc.id,
-					type: 'function' as const,
-					function: {
-						name: tc.name,
-						arguments: JSON.stringify(tc.args)
-					}
-				}))
-			});
-
-			for (const toolCall of toolCalls) {
-				history.push({
-					role: 'tool',
-					tool_call_id: toolCall.id,
-					content: 'Tool executed'
-				});
-			}
 		}
-
-		return { history, memo };
 	}
 
 	private prepareMessages(
@@ -131,33 +126,28 @@ export class DiscoveryAgent implements Agent {
 		memo: MemporyGetResult
 	): ChatCompletionMessageParam[] {
 		const messages: ChatCompletionMessageParam[] = [];
-
-		// 1. System prompt with static memories context
 		const staticParts = memo.static.map((part) => `- ${part.content}`).join('\n');
 		messages.push({
 			role: 'system',
-			content: `${DISCOVERY_PLANNER_PROMPT}\n\nContext:\n${staticParts || 'No context available.'}`
+			content: `${DISCOVERY_PROMPT}\n\nContext:\n${staticParts || 'No drafts yet.'}`
 		});
 
-		// 2. Profile memories
 		if (memo.profile && memo.profile.length > 0) {
 			const parts = memo.profile.map((part) => `- ${part.content}`).join('\n');
 			messages.push({
 				role: 'system',
-				content: `User profile memories:\n${parts}`
+				content: `User context:\n${parts}`
 			});
 		}
 
-		// 3. Event memories
 		if (memo.event && memo.event.length > 0) {
 			const parts = memo.event.map((part) => `- ${part.content}`).join('\n');
 			messages.push({
 				role: 'system',
-				content: `Chat event memories:\n${parts}`
+				content: `Chat context:\n${parts}`
 			});
 		}
 
-		// 4. Conversation history
 		messages.push(...(history as ChatCompletionMessageParam[]));
 
 		return messages;
@@ -166,66 +156,9 @@ export class DiscoveryAgent implements Agent {
 	private async executeTool(
 		toolCall: ToolCall,
 		profileId: string,
-		chatId: string,
-		memo: MemporyGetResult
+		chatId: string
 	): Promise<string> {
-		console.log(`Executing tool: ${toolCall.name}`);
-
-		if (toolCall.name === this.memoryApp.searchTool.function.name) {
-			console.log(`Memory search tool called with query: ${toolCall.args.query}`);
-
-			const dto: MemoryGetCmd = {
-				query: toolCall.args.query as string,
-				tokens: ADDITIONAL_MEMORY_TOKENS,
-				profileId,
-				chatId
-			};
-			const result = await this.memoryApp.get(dto);
-
-			console.log(
-				`Memory search result: ${result.event?.length || 0} events, ${result.profile?.length || 0} profiles`
-			);
-
-			// Append new memories to memo (mutating)
-			if (result.event && result.event.length > 0) {
-				memo.event.push(...result.event);
-			}
-			if (result.profile && result.profile.length > 0) {
-				memo.profile.push(...result.profile);
-			}
-
-			return 'Memory searched successfully!';
-		}
-
-		if (toolCall.name === this.memoryApp.putTool.function.name) {
-			console.log(`Memory put tool called`);
-
-			const dto: MemoryPutCmd = {
-				profiles: (
-					toolCall.args.profiles as {
-						type: ProfileType;
-						importance: Importance;
-						content: string;
-					}[]
-				).map((profile) => ({
-					profileId,
-					...profile
-				})),
-				events: (
-					toolCall.args.events as { type: EventType; importance: Importance; content: string }[]
-				).map((event) => ({
-					chatId,
-					...event
-				}))
-			};
-			await this.memoryApp.put(dto);
-
-			return 'Memory saved successfully!';
-		}
-
 		if (toolCall.name === this.painApp.createTool.function.name) {
-			console.log(`Pain create tool called with: ${JSON.stringify(toolCall.args)}`);
-
 			const dto: PainCreateCmd = {
 				chatId,
 				userId: profileId,
@@ -235,20 +168,16 @@ export class DiscoveryAgent implements Agent {
 				keywords: toolCall.args.keywords as string[]
 			};
 			await this.painApp.create(dto);
-
-			return 'Pain draft created successfully!';
+			return 'Draft created';
 		}
 
 		if (toolCall.name === this.painApp.updateTool.function.name) {
-			console.log(`Pain update tool called with: ${JSON.stringify(toolCall.args)}`);
-
 			const dto: PainUpdateCmd = {
 				id: toolCall.args.id as string,
 				...toolCall.args
 			};
 			await this.painApp.update(dto);
-
-			return 'Pain draft updated successfully!';
+			return 'Draft updated';
 		}
 
 		return `Unknown tool: ${toolCall.name}`;

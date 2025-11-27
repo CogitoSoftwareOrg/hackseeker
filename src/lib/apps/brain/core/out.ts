@@ -15,6 +15,7 @@ export type AgentResult = {
 
 export interface Agent {
 	run(cmd: AgentRunCmd): Promise<AgentResult>;
+	runStream(cmd: AgentRunCmd): Promise<ReadableStream>;
 }
 
 export interface Synthesizer {

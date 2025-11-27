@@ -82,7 +82,7 @@ export class MemoryAppImpl implements MemoryApp {
 		// CHAT
 		const chatMemories = await this.getChatMemories(cmd.query, cmd.chatId, remainingTokens);
 		return {
-			static: [],
+			static: staticMemories,
 			event: chatMemories,
 			profile: profileMemories
 		};
@@ -142,6 +142,7 @@ export class MemoryAppImpl implements MemoryApp {
 	private async getStaticMemories(chatId: string, tokens: number): Promise<StaticMemory[]> {
 		let remainingTokens = tokens;
 		const pains = await this.painApp.getByChatId(chatId);
+		console.log('Found pains for chat: ', chatId, pains.length);
 		const staticMemories: StaticMemory[] = [];
 		for (const pain of pains) {
 			const painTokens = TOKENIZERS[LLMS.GROK_4_FAST].encode(pain.prompt).length;

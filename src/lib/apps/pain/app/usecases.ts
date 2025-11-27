@@ -85,7 +85,7 @@ export class PainAppImpl implements PainApp {
 		const recs: PainsResponse<PainKeywords, PainMetrics>[] = await pb
 			.collection(Collections.Pains)
 			.getFullList({
-				filter: `chats ?= "${chatId}" && archived = null`
+				filter: `chats:each = "${chatId}" && archived = null`
 			});
 		return recs.map(Pain.fromResponse);
 	}
@@ -105,9 +105,15 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async update(cmd: PainUpdateCmd) {
+		const dto = {
+			segment: cmd.segment ?? undefined,
+			problem: cmd.problem ?? undefined,
+			jtbd: cmd.jtbd ?? undefined,
+			keywords: cmd.keywords ?? undefined
+		};
 		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
 			.collection(Collections.Pains)
-			.update(cmd.id, cmd);
+			.update(cmd.id, dto);
 		return Pain.fromResponse(rec);
 	}
 }
