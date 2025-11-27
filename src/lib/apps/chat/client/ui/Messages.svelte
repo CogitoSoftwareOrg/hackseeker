@@ -49,7 +49,7 @@
 		]}
 	>
 		<div
-			class="mx-auto flex min-h-full w-full min-w-0 max-w-4xl flex-col space-y-3 px-2 pt-10 pb-4"
+			class="mx-auto flex min-h-full w-full min-w-0 max-w-4xl flex-col space-y-3 px-1 sm:px-2 pt-10 pb-4"
 		>
 			{#if messages.length === 0}
 				<div class="flex flex-1 flex-col items-center justify-center text-center opacity-50">

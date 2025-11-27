@@ -1,6 +1,10 @@
 import { encoding_for_model } from 'tiktoken';
 
 export const LLMS = {
+	// OpenAI
+	GPT_5_NANO: 'gpt-5-nano',
+
+	// Grok
 	GROK_4_FAST_NON_REASONING: 'grok-4-fast-non-reasoning',
 	GROK_4_FAST: 'grok-4-fast',
 	GROK_4_1_FAST: 'grok-4-1-fast-reasoning',

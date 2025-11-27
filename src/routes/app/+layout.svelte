@@ -2,15 +2,17 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Plus, Settings, Heart, MessageSquare, Menu, PanelRight } from 'lucide-svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	import { chatApi, chatsStore, ChatHeader } from '$lib/apps/chat/client';
 	import { uiStore, swipeable } from '$lib/shared/ui';
 	import { userStore, subStore, FeedbackForm } from '$lib/apps/user/client';
 	import { Button, Modal, ThemeController, AuthWall, Paywall, Sidebar } from '$lib/shared/ui';
-	import { ChatsStatusOptions } from '$lib';
+	import { ChatsStatusOptions, PainsStatusOptions } from '$lib';
 
 	import Splash from './Splash.svelte';
 	import { painsStore } from '$lib/apps/pain/client';
+	import type { WorkflowMode } from '$lib/apps/brain/core/models.js';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
@@ -21,6 +23,18 @@
 	const sidebarExpanded = $derived(uiStore.sidebarExpanded);
 
 	const chats = $derived(chatsStore.chats);
+	const chatModes = $derived.by(() => {
+		const m = new SvelteMap<string, WorkflowMode>();
+		for (const chat of chats) {
+			const pains = painsStore.getByChatId(chat.id);
+			const validationPains = pains.filter((p) => p.status === PainsStatusOptions.validation);
+			m.set(chat.id, validationPains.length > 0 ? 'validation' : 'discovery');
+		}
+		return m;
+	});
+
+	const discoveryChats = $derived(chats.filter((c) => chatModes.get(c.id) === 'discovery'));
+	const validationChats = $derived(chats.filter((c) => chatModes.get(c.id) === 'validation'));
 
 	// Chat page context detection
 	const isChatPage = $derived(page.url.pathname.startsWith('/app/chats/'));
@@ -107,8 +121,27 @@
 
 	<div class="flex-1 overflow-y-auto px-2">
 		<ul class="menu w-full gap-1">
-			<li class="menu-title">Chats</li>
-			{#each chats as chat (chat.id)}
+			<li class="menu-title">Validation Chats</li>
+			{#each validationChats as chat (chat.id)}
+				<li class="w-full">
+					<a
+						href={`/app/chats/${chat.id}`}
+						class={[
+							'btn flex w-full items-center gap-2 rounded-xl btn-ghost transition-all',
+							expanded ? 'justify-start px-4' : 'justify-center',
+							isActive(`/app/chats/${chat.id}`) ? 'btn-soft' : ''
+						]}
+						title={!expanded ? chat.title || chat.id : ''}
+					>
+						{chat.id.slice(0, 2)}.
+						{#if expanded}
+							<span class="truncate font-medium">{chat.title || chat.id}</span>
+						{/if}
+					</a>
+				</li>
+			{/each}
+			<li class="menu-title">Discovery Chats</li>
+			{#each discoveryChats as chat (chat.id)}
 				<li class="w-full">
 					<a
 						href={`/app/chats/${chat.id}`}
@@ -220,13 +253,13 @@
 				class="flex h-10 shrink-0 items-center justify-between border-b border-base-300 px-2 md:hidden"
 			>
 				<Button
-					color="neutral"
 					circle
 					size="sm"
-					onclick={() => uiStore.setSidebarOpen(true)}
 					variant="ghost"
+					class="shrink-0 md:hidden"
+					onclick={() => uiStore.setSidebarOpen(true)}
 				>
-					<Menu class="size-6" />
+					<Menu size={18} />
 				</Button>
 				<span></span>
 				<span></span>

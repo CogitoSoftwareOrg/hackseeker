@@ -47,7 +47,7 @@
 	<Sidebar
 		open={(mobile.current && rightSidebarOpen) ?? false}
 		position="right"
-		mobileWidth="w-72"
+		mobileWidth="w-84"
 		showToggle={false}
 		mobileOnly
 		onclose={() => uiStore.setRightSidebarOpen(false)}

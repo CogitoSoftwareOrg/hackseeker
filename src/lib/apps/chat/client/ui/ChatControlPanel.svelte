@@ -83,8 +83,8 @@
 
 <div class={['flex h-full flex-col overflow-hidden', className]}>
 	<!-- Header -->
-	<div class={['shrink-0 border-b border-base-300', compact ? 'p-3' : 'p-4']}>
-		<div class="flex items-center gap-2">
+	<header class={['shrink-0 border-b border-base-300 h-12', compact ? 'px-3' : 'px-4']}>
+		<div class="flex items-center gap-2 h-full">
 			{#if mode === 'discovery'}
 				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/20">
 					<Lightbulb size={16} class="text-warning" />
@@ -103,7 +103,7 @@
 				</p>
 			</div>
 		</div>
-	</div>
+	</header>
 
 	<!-- Content -->
 	<div class="flex-1 overflow-y-auto">
@@ -289,12 +289,12 @@
 				{/if}
 
 				<!-- Other Drafts -->
-				{#if draftPains.length > 0}
+				<!-- {#if draftPains.length > 0}
 					<div class="divider my-2 text-xs">Other Drafts</div>
 					{#each draftPains as pain (pain.id)}
 						<PainCard {pain} {compact} />
 					{/each}
-				{/if}
+				{/if} -->
 			</div>
 		{/if}
 	</div>

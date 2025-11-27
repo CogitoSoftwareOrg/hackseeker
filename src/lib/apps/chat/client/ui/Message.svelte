@@ -40,7 +40,13 @@
 	);
 </script>
 
-<div class={['group flex w-full gap-4 px-4 py-2', incoming ? '' : 'flex-row-reverse', className]}>
+<div
+	class={[
+		'group flex w-full gap-4 px-0 sm:px-4 py-2',
+		incoming ? '' : 'flex-row-reverse',
+		className
+	]}
+>
 	<!-- Avatar -->
 	<div class="flex shrink-0 flex-col items-center gap-1">
 		{#if showHeader}
@@ -120,7 +126,7 @@
 					></span>
 				</div>
 			{:else}
-				<div class="min-w-0 max-w-full overflow-x-auto -mx-3 px-3">
+				<div class="min-w-0 overflow-x-auto -mx-3 px-3">
 					{@html safeHtml}
 				</div>
 			{/if}
