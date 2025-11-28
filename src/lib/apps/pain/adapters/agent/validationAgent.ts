@@ -2,33 +2,31 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
 import type { MemoryApp, MemporyGetResult } from '$lib/apps/memory/core';
-import type { PainApp, PainCreateCmd, PainUpdateCmd } from '$lib/apps/pain/core';
+import type { PainUpdateCmd } from '$lib/apps/pain/core';
 import { grok, LLMS } from '$lib/shared/server';
 
-import type { Agent, AgentResult, AgentRunCmd, Tool, ToolCall } from '../../core';
+import type { Agent, AgentResult, AgentRunCmd, Tool, ToolCall } from '$lib/apps/llmTools/core';
 
+import { updatePainTool } from '../tools';
 import { VALIDATION_PROMPT } from './prompts';
 
 const MAX_LOOP_ITERATIONS = 5;
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 
 export class ValidationAgent implements Agent {
-	private readonly tools: Tool[];
+	tools: Tool[];
 
-	constructor(
-		private readonly memoryApp: MemoryApp,
-		private readonly painApp: PainApp
-	) {
-		this.tools = [this.painApp.updateTool];
+	constructor(memoryApp: MemoryApp, tools: Tool[]) {
+		this.tools = [memoryApp.searchTool, memoryApp.putTool, ...tools];
 	}
 
 	async run(cmd: AgentRunCmd): Promise<AgentResult> {
-		const { profileId, chatId, memo } = cmd;
+		const { tools, memo } = cmd;
 		const history = [...cmd.history];
 		const workflowMessages = this.prepareMessages(history, memo);
 
 		// Run tool loop
-		await this.runToolLoop(workflowMessages, profileId, chatId);
+		await this.runToolLoop(workflowMessages, [...tools, ...this.tools]);
 
 		// Final response (no tools)
 		const res = await grok.chat.completions.create({
@@ -44,11 +42,11 @@ export class ValidationAgent implements Agent {
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { profileId, chatId, memo } = cmd;
+		const { tools, memo } = cmd;
 		const workflowMessages = this.prepareMessages([...cmd.history], memo);
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(workflowMessages, profileId, chatId);
+		await this.runToolLoop(workflowMessages, [...tools, ...this.tools]);
 
 		// Stream only the final response
 		const res = await grok.chat.completions.create({
@@ -72,15 +70,14 @@ export class ValidationAgent implements Agent {
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
-		profileId: string,
-		chatId: string
+		tools: Tool[]
 	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
 			const res = await grok.chat.completions.create({
 				model: AGENT_MODEL,
 				messages: workflowMessages,
 				stream: false,
-				tools: this.tools,
+				tools: tools.map((t) => t.schema),
 				tool_choice: 'auto'
 			});
 
@@ -110,7 +107,9 @@ export class ValidationAgent implements Agent {
 
 			// Execute tools and add results
 			for (const toolCall of toolCalls) {
-				const result = await this.executeTool(toolCall, profileId, chatId);
+				const tool = tools.find((t) => t.schema.function.name === toolCall.name);
+				if (!tool) throw new Error(`Unknown tool: ${toolCall.name}`);
+				const result = await this.executeTool(toolCall, tool);
 				workflowMessages.push({
 					role: 'tool',
 					tool_call_id: toolCall.id,
@@ -153,30 +152,13 @@ export class ValidationAgent implements Agent {
 		return messages;
 	}
 
-	private async executeTool(
-		toolCall: ToolCall,
-		profileId: string,
-		chatId: string
-	): Promise<string> {
-		if (toolCall.name === this.painApp.createTool.function.name) {
-			const dto: PainCreateCmd = {
-				chatId,
-				userId: profileId,
-				segment: toolCall.args.segment as string,
-				problem: toolCall.args.problem as string,
-				jtbd: toolCall.args.jtbd as string,
-				keywords: toolCall.args.keywords as string[]
-			};
-			await this.painApp.create(dto);
-			return 'Draft created';
-		}
-
-		if (toolCall.name === this.painApp.updateTool.function.name) {
+	private async executeTool(toolCall: ToolCall, tool: Tool): Promise<string> {
+		if (toolCall.name === updatePainTool.function.name) {
 			const dto: PainUpdateCmd = {
 				id: toolCall.args.id as string,
 				...toolCall.args
 			};
-			await this.painApp.update(dto);
+			await tool.callback(dto);
 			return 'Draft updated';
 		}
 

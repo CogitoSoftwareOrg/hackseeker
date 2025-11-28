@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { WorkflowMode } from '$lib/apps/brain/core';
+	import type { WorkflowMode } from '$lib/apps/pain/core';
+
 	import {
 		Lightbulb,
 		Search,

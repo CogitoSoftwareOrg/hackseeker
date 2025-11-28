@@ -4,7 +4,7 @@ import {
 	type ChatsResponse,
 	type MessagesResponse
 } from '$lib';
-import type { WorkflowMode } from '$lib/apps/brain/core';
+import type { WorkflowMode } from '$lib/apps/llmTools/core';
 
 export type Sender = {
 	id: string;

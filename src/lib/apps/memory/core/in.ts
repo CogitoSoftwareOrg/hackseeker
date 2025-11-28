@@ -1,4 +1,4 @@
-import type { Tool } from '$lib/apps/brain/core';
+import type { Tool } from '$lib/apps/llmTools/core';
 
 import type {
 	EventMemory,

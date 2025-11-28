@@ -1,5 +1,5 @@
-import type { BrainApp } from '$lib/apps/brain/core';
 import type { MemoryApp } from '$lib/apps/memory/core';
+import type { PainApp } from '$lib/apps/pain/core';
 import {
 	Collections,
 	MessagesRoleOptions,
@@ -24,17 +24,17 @@ const INITIAL_MEMORY_TOKENS = 1000;
 
 export class ChatAppImpl implements ChatApp {
 	constructor(
-		private readonly brainApp: BrainApp,
-		private readonly memoryApp: MemoryApp
+		private readonly memoryApp: MemoryApp,
+		private readonly painApp: PainApp
 	) {}
 
 	async run(cmd: SendUserMessageCmd): Promise<string> {
 		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
 
-		const content = await this.brainApp.run({
+		const content = await this.painApp.ask({
 			history,
 			memo,
-			profileId: cmd.principal.user.id,
+			userId: cmd.principal.user.id,
 			chatId: cmd.chatId,
 			mode: chat.mode
 		});
@@ -46,7 +46,7 @@ export class ChatAppImpl implements ChatApp {
 	async runStream(cmd: SendUserMessageCmd): Promise<ReadableStream> {
 		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
 		const postProcess = this.postProcess;
-		const brainApp = this.brainApp;
+		const painApp = this.painApp;
 		const encoder = new TextEncoder();
 
 		return new ReadableStream({
@@ -59,10 +59,10 @@ export class ChatAppImpl implements ChatApp {
 
 					let content = '';
 
-					const stream = await brainApp.runStream({
+					const stream = await painApp.askStream({
 						history,
 						memo,
-						profileId: cmd.principal.user.id,
+						userId: cmd.principal.user.id,
 						chatId: cmd.chatId,
 						mode: chat.mode
 					});

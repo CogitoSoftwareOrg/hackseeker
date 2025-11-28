@@ -1,6 +1,7 @@
-import type { Tool } from '$lib/apps/brain/core';
+import type { OpenAIMessage } from '$lib/apps/chat/core';
+import type { MemporyGetResult } from '$lib/apps/memory/core';
 
-import type { Pain } from './models';
+import type { Pain, WorkflowMode } from './models';
 
 export type PainCreateCmd = {
 	chatId: string;
@@ -21,9 +22,17 @@ export type PainUpdateCmd = {
 	keywords?: string[];
 };
 
+export interface PainAskCmd {
+	mode: WorkflowMode;
+	userId: string;
+	chatId: string;
+	history: OpenAIMessage[];
+	memo: MemporyGetResult;
+}
+
 export interface PainApp {
-	createTool: Tool;
-	updateTool: Tool;
+	ask(cmd: PainAskCmd): Promise<string>;
+	askStream(cmd: PainAskCmd): Promise<ReadableStream>;
 
 	getByChatId(chatId: string): Promise<Pain[]>;
 

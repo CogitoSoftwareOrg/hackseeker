@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Pencil, Check, X, Menu, Lightbulb, Search, PanelRight } from 'lucide-svelte';
-	import type { WorkflowMode } from '$lib/apps/brain/core';
+	import type { WorkflowMode } from '$lib/apps/llmTools/core';
 
 	import { chatsStore, chatApi } from '$lib/apps/chat/client';
 	import { painsStore } from '$lib/apps/pain/client';

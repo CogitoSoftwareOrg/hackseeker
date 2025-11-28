@@ -1,8 +1,8 @@
 import type { MemoryApp } from '$lib/apps/memory/core';
-import type { BrainApp } from '$lib/apps/brain/core';
+import type { PainApp } from '$lib/apps/pain/core';
 
 import { ChatAppImpl } from './app';
 
-export const getChatApp = (memoryApp: MemoryApp, brainApp: BrainApp) => {
-	return new ChatAppImpl(brainApp, memoryApp);
+export const getChatApp = (memoryApp: MemoryApp, painApp: PainApp) => {
+	return new ChatAppImpl(memoryApp, painApp);
 };

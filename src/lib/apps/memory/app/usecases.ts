@@ -1,9 +1,8 @@
 import z from 'zod';
 import { zodFunction } from 'openai/helpers/zod.js';
 
-import type { Tool } from '$lib/apps/brain/core';
+import type { Tool } from '$lib/apps/llmTools/core';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
-import type { PainApp } from '$lib/apps/pain/core';
 
 import {
 	type MemoryGetCmd,
@@ -13,7 +12,6 @@ import {
 	type ProfileMemory,
 	type EventMemory,
 	type MemoryPutCmd,
-	type StaticMemory,
 	type MemporyGetResult,
 	ProfileType,
 	Importance,
@@ -21,7 +19,6 @@ import {
 } from '../core';
 
 const DAYS_TO_SEARCH_LATEST_MEMORIES = 7;
-const STATIC_TOKEN_LIMIT = 2000;
 
 export class MemoryAppImpl implements MemoryApp {
 	searchTool: Tool;
@@ -29,49 +26,52 @@ export class MemoryAppImpl implements MemoryApp {
 	constructor(
 		// ADAPTERS
 		private readonly profileIndexer: ProfileIndexer,
-		private readonly eventIndexer: EventIndexer,
-
-		// APPS
-		private readonly painApp: PainApp
+		private readonly eventIndexer: EventIndexer
 	) {
-		// @ts-expect-error zodFunction is not typed
-		this.searchTool = zodFunction({
-			name: 'search_memories',
-			description: 'Search the memories for relevant information',
-			parameters: z.object({
-				query: z.string().describe('The query to search for')
-			})
-		});
-		// @ts-expect-error zodFunction is not typed
-		this.putTool = zodFunction({
-			name: 'save_memories',
-			description: 'Save important new memories',
-			parameters: z.object({
-				profiles: z.array(
-					z.object({
-						type: z.enum(Object.values(ProfileType)).describe('The type of the profile'),
-						importance: z.enum(Object.values(Importance)).describe('The importance of the profile'),
-						content: z.string().describe('The content of the profile')
-					})
-				),
-				events: z.array(
-					z.object({
-						type: z.enum(Object.values(EventType)).describe('The type of the event'),
-						importance: z.enum(Object.values(Importance)).describe('The importance of the event'),
-						content: z.string().describe('The content of the event')
-					})
-				)
-			})
-		});
+		this.searchTool = {
+			// @ts-expect-error zodFunction is not typed
+			schema: zodFunction({
+				name: 'search_memories',
+				description: 'Search the memories for relevant information',
+				parameters: z.object({
+					query: z.string().describe('The query to search for')
+				})
+			}),
+			// @ts-expect-error zodFunction is not typed
+			callback: this.get
+		};
+		this.putTool = {
+			// @ts-expect-error zodFunction is not typed
+			schema: zodFunction({
+				name: 'save_memories',
+				description: 'Save important new memories',
+				parameters: z.object({
+					profiles: z.array(
+						z.object({
+							type: z.enum(Object.values(ProfileType)).describe('The type of the profile'),
+							importance: z
+								.enum(Object.values(Importance))
+								.describe('The importance of the profile'),
+							content: z.string().describe('The content of the profile')
+						})
+					),
+					events: z.array(
+						z.object({
+							type: z.enum(Object.values(EventType)).describe('The type of the event'),
+							importance: z.enum(Object.values(Importance)).describe('The importance of the event'),
+							content: z.string().describe('The content of the event')
+						})
+					)
+				})
+			}),
+			// @ts-expect-error zodFunction is not typed
+			callback: this.put
+		};
 	}
 
 	async get(cmd: MemoryGetCmd): Promise<MemporyGetResult> {
 		let remainingTokens = cmd.tokens;
 		console.log('Getting memories for chat: ', cmd.chatId);
-
-		// STATIC
-		const staticMemories = await this.getStaticMemories(cmd.chatId, STATIC_TOKEN_LIMIT);
-		cmd.tokens -= staticMemories.reduce((acc, mem) => acc + mem.tokens, 0);
 
 		// PROFILE
 		const profileMemories = await this.getProfilesMemories(
@@ -84,7 +84,7 @@ export class MemoryAppImpl implements MemoryApp {
 		// CHAT
 		const chatMemories = await this.getChatMemories(cmd.query, cmd.chatId, remainingTokens);
 		return {
-			static: staticMemories,
+			static: [],
 			event: chatMemories,
 			profile: profileMemories
 		};
@@ -139,27 +139,6 @@ export class MemoryAppImpl implements MemoryApp {
 			console.error('Error in memory.put:', error);
 			throw error;
 		}
-	}
-
-	private async getStaticMemories(chatId: string, tokens: number): Promise<StaticMemory[]> {
-		let remainingTokens = tokens;
-		const pains = await this.painApp.getByChatId(chatId);
-		console.log('Found pains for chat: ', chatId, pains.length);
-		const staticMemories: StaticMemory[] = [];
-		for (const pain of pains) {
-			const painTokens = TOKENIZERS[LLMS.GROK_4_FAST].encode(pain.prompt).length;
-			if (remainingTokens < painTokens) {
-				console.warn('Not enough tokens to add pain', pain);
-				break;
-			}
-			remainingTokens -= painTokens;
-			staticMemories.push({
-				kind: 'static',
-				content: pain.prompt,
-				tokens: painTokens
-			});
-		}
-		return staticMemories;
 	}
 
 	private async getChatMemories(

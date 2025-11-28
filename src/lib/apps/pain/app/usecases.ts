@@ -1,60 +1,93 @@
-import z from 'zod';
-import { zodFunction } from 'openai/helpers/zod.js';
-
 import { Collections, PainsStatusOptions, pb, type PainsResponse } from '$lib/shared';
-import type { Tool } from '$lib/apps/brain/core';
+import type { Agent, Tool } from '$lib/apps/llmTools/core';
 import type { SearchApp } from '$lib/apps/search/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 
 import {
 	Pain,
 	type PainApp,
+	type PainAskCmd,
 	type PainCreateCmd,
 	type PainKeywords,
 	type PainMetrics,
-	type PainUpdateCmd
+	type PainUpdateCmd,
+	type WorkflowMode
 } from '../core';
+import { createPainTool, updatePainTool } from '../adapters';
 
 export class PainAppImpl implements PainApp {
-	createTool: Tool;
-	updateTool: Tool;
-
 	constructor(
+		private readonly agents: Record<WorkflowMode, Agent>,
+
 		private readonly searchApp: SearchApp,
 		private readonly artifactApp: ArtifactApp
-	) {
+	) {}
+
+	async ask(cmd: PainAskCmd): Promise<string> {
+		const agent = this.agents[cmd.mode];
+
 		// @ts-expect-error zodFunction is not typed
-		this.createTool = zodFunction({
-			name: 'create_pain',
-			description: 'Create a new pain draft',
-			parameters: z.object({
-				segment: z.string().describe('The segment of the pain. 1-3 words max.'),
-				problem: z
-					.string()
-					.describe('The problem exprienced by the segment. 1 small sentence max.'),
-				jtbd: z.string().describe('The job to be done for the segment. 1 small sentence max.'),
-				keywords: z.array(z.string()).describe('The keywords to search for the pain')
-			})
+		const tools: Tool[] = [{ schema: createPainTool, callback: this.create }];
+		const pains: Pain[] = [];
+
+		if (cmd.mode === 'discovery') {
+			// @ts-expect-error zodFunction is not typed
+			tools.push({ schema: updatePainTool, callback: this.update });
+			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.draft)));
+		} else if (cmd.mode === 'validation') {
+			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
+		}
+
+		for (const pain of pains) {
+			cmd.memo.static.push({
+				content: pain.prompt,
+				kind: 'static',
+				tokens: pain.prompt.length
+			});
+		}
+
+		const result = await agent.run({
+			userId: cmd.userId,
+			chatId: cmd.chatId,
+			tools,
+			history: cmd.history,
+			memo: cmd.memo
 		});
+
+		// Return the last assistant message content
+		const lastMessage = result.history[result.history.length - 1];
+		return lastMessage?.content || '';
+	}
+
+	async askStream(cmd: PainAskCmd): Promise<ReadableStream> {
+		const agent = this.agents[cmd.mode];
+
 		// @ts-expect-error zodFunction is not typed
-		this.updateTool = zodFunction({
-			name: 'update_pain',
-			description: 'Update a pain draft',
-			parameters: z.object({
-				id: z.string().describe('The id of the pain'),
-				segment: z.string().describe('The segment of the pain.').optional().nullable(),
-				problem: z
-					.string()
-					.describe('The problem exprienced by the segment.')
-					.optional()
-					.nullable(),
-				jtbd: z.string().describe('The job to be done for the segment').optional().nullable(),
-				keywords: z
-					.array(z.string())
-					.describe('The keywords to search for the pain')
-					.optional()
-					.nullable()
-			})
+		const tools: Tool[] = [{ schema: createPainTool, callback: this.create }];
+		const pains: Pain[] = [];
+
+		if (cmd.mode === 'discovery') {
+			// @ts-expect-error zodFunction is not typed
+			tools.push({ schema: updatePainTool, callback: this.update });
+			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.draft)));
+		} else if (cmd.mode === 'validation') {
+			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
+		}
+
+		for (const pain of pains) {
+			cmd.memo.static.push({
+				content: pain.prompt,
+				kind: 'static',
+				tokens: pain.prompt.length
+			});
+		}
+
+		return agent.runStream({
+			userId: cmd.userId,
+			chatId: cmd.chatId,
+			tools,
+			history: cmd.history,
+			memo: cmd.memo
 		});
 	}
 
@@ -83,11 +116,13 @@ export class PainAppImpl implements PainApp {
 		return pain;
 	}
 
-	async getByChatId(chatId: string): Promise<Pain[]> {
+	async getByChatId(chatId: string, status?: PainsStatusOptions): Promise<Pain[]> {
 		const recs: PainsResponse<PainKeywords, PainMetrics>[] = await pb
 			.collection(Collections.Pains)
 			.getFullList({
-				filter: `chats:each = "${chatId}" && archived = null`
+				filter: status
+					? `chats:each = "${chatId}" && archived = null && status = "${status}"`
+					: `chats:each = "${chatId}" && archived = null`
 			});
 		return recs.map(Pain.fromResponse);
 	}

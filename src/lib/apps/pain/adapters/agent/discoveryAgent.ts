@@ -2,34 +2,31 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
 import type { MemoryApp, MemporyGetResult } from '$lib/apps/memory/core';
-import type { PainApp, PainCreateCmd, PainUpdateCmd } from '$lib/apps/pain/core';
+import type { PainCreateCmd, PainUpdateCmd } from '$lib/apps/pain/core';
 import { grok, LLMS } from '$lib/shared/server';
 
-import type { Agent, AgentResult, AgentRunCmd } from '../../core';
-import type { Tool, ToolCall } from '../../core/models';
+import type { Agent, AgentResult, AgentRunCmd, Tool, ToolCall } from '$lib/apps/llmTools/core';
 
+import { createPainTool, updatePainTool } from '../tools';
 import { DISCOVERY_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
 
 export class DiscoveryAgent implements Agent {
-	private readonly tools: Tool[];
+	tools: Tool[];
 
-	constructor(
-		private readonly memoryApp: MemoryApp,
-		private readonly painApp: PainApp
-	) {
-		this.tools = [this.painApp.createTool, this.painApp.updateTool];
+	constructor(memoryApp: MemoryApp, tools: Tool[]) {
+		this.tools = [memoryApp.searchTool, memoryApp.putTool, ...tools];
 	}
 
 	async run(cmd: AgentRunCmd): Promise<AgentResult> {
-		const { profileId, chatId, memo } = cmd;
+		const { userId, chatId, tools, memo } = cmd;
 		const history = [...cmd.history];
 		const workflowMessages = this.prepareMessages(history, memo);
 
 		// Run tool loop
-		await this.runToolLoop(workflowMessages, profileId, chatId);
+		await this.runToolLoop(workflowMessages, userId, chatId, [...tools, ...this.tools]);
 
 		// Final response (no tools)
 		const res = await grok.chat.completions.create({
@@ -45,11 +42,11 @@ export class DiscoveryAgent implements Agent {
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { profileId, chatId, memo } = cmd;
+		const { userId, chatId, tools, memo } = cmd;
 		const workflowMessages = this.prepareMessages([...cmd.history], memo);
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(workflowMessages, profileId, chatId);
+		await this.runToolLoop(workflowMessages, userId, chatId, [...tools, ...this.tools]);
 
 		// Stream only the final response
 		const res = await grok.chat.completions.create({
@@ -73,15 +70,16 @@ export class DiscoveryAgent implements Agent {
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
-		profileId: string,
-		chatId: string
+		userId: string,
+		chatId: string,
+		tools: Tool[]
 	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
 			const res = await grok.chat.completions.create({
 				model: AGENT_MODEL,
 				messages: workflowMessages,
 				stream: false,
-				tools: this.tools,
+				tools: tools.map((t) => t.schema),
 				tool_choice: 'auto'
 			});
 
@@ -111,7 +109,9 @@ export class DiscoveryAgent implements Agent {
 
 			// Execute tools and add results
 			for (const toolCall of toolCalls) {
-				const result = await this.executeTool(toolCall, profileId, chatId);
+				const tool = tools.find((t) => t.schema.function.name === toolCall.name);
+				if (!tool) throw new Error(`Unknown tool: ${toolCall.name}`);
+				const result = await this.executeTool(toolCall, userId, chatId, tool);
 				workflowMessages.push({
 					role: 'tool',
 					tool_call_id: toolCall.id,
@@ -155,28 +155,29 @@ export class DiscoveryAgent implements Agent {
 
 	private async executeTool(
 		toolCall: ToolCall,
-		profileId: string,
-		chatId: string
+		userId: string,
+		chatId: string,
+		tool: Tool
 	): Promise<string> {
-		if (toolCall.name === this.painApp.createTool.function.name) {
+		if (tool.schema.function.name === createPainTool.function.name) {
 			const dto: PainCreateCmd = {
 				chatId,
-				userId: profileId,
+				userId,
 				segment: toolCall.args.segment as string,
 				problem: toolCall.args.problem as string,
 				jtbd: toolCall.args.jtbd as string,
 				keywords: toolCall.args.keywords as string[]
 			};
-			await this.painApp.create(dto);
+			await tool.callback(dto);
 			return 'Draft created';
 		}
 
-		if (toolCall.name === this.painApp.updateTool.function.name) {
+		if (toolCall.name === updatePainTool.function.name) {
 			const dto: PainUpdateCmd = {
 				id: toolCall.args.id as string,
 				...toolCall.args
 			};
-			await this.painApp.update(dto);
+			await tool.callback(dto);
 			return 'Draft updated';
 		}
 

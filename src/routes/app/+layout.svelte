@@ -12,7 +12,7 @@
 
 	import Splash from './Splash.svelte';
 	import { painsStore } from '$lib/apps/pain/client';
-	import type { WorkflowMode } from '$lib/apps/brain/core/models.js';
+	import type { WorkflowMode } from '$lib/apps/llmTools/core/models.js';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
