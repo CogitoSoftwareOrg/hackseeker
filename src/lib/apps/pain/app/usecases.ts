@@ -1,7 +1,15 @@
-import { Collections, PainsStatusOptions, pb, type PainsResponse } from '$lib/shared';
+import {
+	Collections,
+	PainsStatusOptions,
+	pb,
+	type MessagesResponse,
+	type PainsResponse
+} from '$lib/shared';
 import type { Tool } from '$lib/apps/llmTools/core';
 import type { SearchApp } from '$lib/apps/search/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
+import type { ChatApp, OpenAIMessage } from '$lib/apps/chat/core';
+import type { MemoryApp, MemoryGetResult, StaticMemory } from '$lib/apps/memory/core';
 
 import {
 	Pain,
@@ -20,6 +28,9 @@ import {
 	type Renderer
 } from '../core';
 
+const HISTORY_TOKENS = 2000;
+const MEMORY_TOKENS = 5000;
+
 export class PainAppImpl implements PainApp {
 	constructor(
 		// Adapters
@@ -27,22 +38,18 @@ export class PainAppImpl implements PainApp {
 		private readonly renderer: Renderer,
 		// Apps
 		private readonly searchApp: SearchApp,
-		private readonly artifactApp: ArtifactApp
+		private readonly chatApp: ChatApp,
+		private readonly artifactApp: ArtifactApp,
+		private readonly memoryApp: MemoryApp
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const pain = await this.getById(cmd.painId);
-		cmd.memo.static.push({
-			content: pain.prompt,
-			kind: 'static',
-			tokens: pain.prompt.length
-		});
+		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 
 		const agent = this.agents['pdf'];
 		const pdfContent = await agent.run({
 			tools: [],
-			history: cmd.history,
-			memo: cmd.memo,
+			history,
 			dynamicArgs: {}
 		});
 		const pdf = await this.renderer.render(pdfContent);
@@ -53,19 +60,12 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
-		const pain = await this.getById(cmd.painId);
+		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 		const agent = this.agents['landing'];
-
-		cmd.memo.static.push({
-			content: pain.prompt,
-			kind: 'static',
-			tokens: pain.prompt.length
-		});
 
 		const landing = await agent.run({
 			tools: [],
-			history: cmd.history,
-			memo: cmd.memo,
+			history,
 			dynamicArgs: {}
 		});
 
@@ -75,6 +75,7 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async ask(cmd: PainAskCmd): Promise<string> {
+		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -89,18 +90,9 @@ export class PainAppImpl implements PainApp {
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
 		}
 
-		for (const pain of pains) {
-			cmd.memo.static.push({
-				content: pain.prompt,
-				kind: 'static',
-				tokens: pain.prompt.length
-			});
-		}
-
 		const result = await agent.run({
 			tools,
-			history: cmd.history,
-			memo: cmd.memo,
+			history,
 			dynamicArgs: {
 				userId: cmd.userId,
 				chatId: cmd.chatId
@@ -111,32 +103,24 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async askStream(cmd: PainAskCmd): Promise<ReadableStream> {
+		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
-		const tools: Tool[] = [{ schema: createPainTool, callback: this.create }];
+		const tools: Tool[] = [{ schema: CreatePainToolSchema, callback: this.create }];
 		const pains: Pain[] = [];
 
 		if (cmd.mode === 'discovery') {
 			// @ts-expect-error zodFunction is not typed
-			tools.push({ schema: updatePainTool, callback: this.update });
+			tools.push({ schema: UpdatePainToolSchema, callback: this.update });
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.draft)));
 		} else if (cmd.mode === 'validation') {
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
 		}
 
-		for (const pain of pains) {
-			cmd.memo.static.push({
-				content: pain.prompt,
-				kind: 'static',
-				tokens: pain.prompt.length
-			});
-		}
-
 		return agent.runStream({
 			tools,
-			history: cmd.history,
-			memo: cmd.memo,
+			history: history,
 			dynamicArgs: {
 				userId: cmd.userId,
 				chatId: cmd.chatId
@@ -149,22 +133,8 @@ export class PainAppImpl implements PainApp {
 			.collection(Collections.Pains)
 			.update(painId, { status: PainsStatusOptions.validation });
 		const pain = Pain.fromResponse(painRec);
-		// const userId = painRec.user;
 
-		const queries = await this.searchApp.generateQueries(painId, pain.prompt);
-		console.log('queries', queries);
-		// const results = await this.searchApp.searchQueries(queries);
-		// await Promise.all(
-		// 	results.map(async (result) => {
-		// 		if (result.length === 0) return [];
-		// 		return this.artifactApp.extract({
-		// 			userId,
-		// 			painId,
-		// 			searchQueryId: result[0].id,
-		// 			dtos: result
-		// 		});
-		// 	})
-		// );
+		await this.searchApp.generateQueries(painId, pain.prompt);
 
 		return pain;
 	}
@@ -205,5 +175,52 @@ export class PainAppImpl implements PainApp {
 			.collection(Collections.Pains)
 			.update(cmd.id, dto);
 		return Pain.fromResponse(rec);
+	}
+
+	private async prepare(
+		mode: WorkflowMode,
+		chatId: string,
+		userId: string,
+		query: string
+	): Promise<OpenAIMessage[]> {
+		await this.chatApp.prepareMessages(chatId, query);
+
+		// Static Pain Knowledge
+		const history: OpenAIMessage[] = (await this.getByChatId(chatId)).map((pain) => {
+			return {
+				role: 'user',
+				content: pain.prompt
+			};
+		});
+
+		// Chat History
+		history.push(...(await this.chatApp.getHistory(chatId, HISTORY_TOKENS)));
+
+		const memo = await this.memoryApp.get({
+			profileId: userId,
+			query: query,
+			chatId: chatId,
+			tokens: MEMORY_TOKENS
+		});
+
+		if (memo.profile.length > 0) {
+			history.push({ role: 'system', content: 'Memories about the user:' });
+			history.push(
+				...memo.profile.map((p) => {
+					return { role: 'user', content: p.content } as OpenAIMessage;
+				})
+			);
+		}
+
+		if (memo.event.length > 0) {
+			history.push({ role: 'system', content: 'Event memories:' });
+			history.push(
+				...memo.event.map((p) => {
+					return { role: 'user', content: p.content } as OpenAIMessage;
+				})
+			);
+		}
+
+		return history;
 	}
 }

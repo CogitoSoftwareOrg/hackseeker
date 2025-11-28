@@ -15,7 +15,7 @@ export type MemoryGetCmd = {
 	profileId: string;
 	chatId: string;
 };
-export type MemporyGetResult = {
+export type MemoryGetResult = {
 	static: StaticMemory[];
 	event: EventMemory[];
 	profile: ProfileMemory[];
@@ -42,6 +42,6 @@ export interface MemoryApp {
 	searchTool: Tool;
 	putTool: Tool;
 
-	get(cmd: MemoryGetCmd): Promise<MemporyGetResult>;
+	get(cmd: MemoryGetCmd): Promise<MemoryGetResult>;
 	put(cmd: MemoryPutCmd): Promise<void>;
 }

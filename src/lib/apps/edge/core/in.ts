@@ -1,3 +1,4 @@
+import type { WorkflowMode } from '$lib/apps/pain/core';
 import type { Principal } from '$lib/apps/user/core';
 
 export interface StartPainValidationCmd {
@@ -7,10 +8,12 @@ export interface StartPainValidationCmd {
 export interface GenPainPdfCmd {
 	principal: Principal;
 	painId: string;
+	chatId: string;
 }
 export interface GenPainLandingCmd {
 	principal: Principal;
 	painId: string;
+	chatId: string;
 }
 
 export interface SearchArtifactsCmd {
@@ -20,6 +23,7 @@ export interface SearchArtifactsCmd {
 }
 
 export interface StreamChatCmd {
+	mode: WorkflowMode;
 	principal: Principal;
 	chatId: string;
 	query: string;

@@ -4,7 +4,7 @@ import {
 	type ChatsResponse,
 	type MessagesResponse
 } from '$lib';
-import type { WorkflowMode } from '$lib/apps/llmTools/core';
+import type { WorkflowMode } from '$lib/apps/pain/core';
 
 export type Sender = {
 	id: string;

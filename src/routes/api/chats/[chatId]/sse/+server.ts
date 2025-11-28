@@ -1,9 +1,12 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 
 import { withTracing, streamWithFlush } from '$lib/shared/server';
+import type { WorkflowMode } from '$lib/apps/pain/core';
 
 const handler: RequestHandler = async ({ params, url, locals }) => {
 	const { chatId } = params;
+	const mode = (url.searchParams.get('mode') as WorkflowMode) ?? 'discovery';
+
 	const query = url.searchParams.get('q') || '';
 
 	if (!locals.principal?.user) throw error(401, 'Unauthorized');
@@ -11,11 +14,18 @@ const handler: RequestHandler = async ({ params, url, locals }) => {
 
 	const edge = locals.di.edge;
 
+	const sendEvent = (event: string, data: string) => {
+		controller.enqueue(encoder.encode(`event: ${event}\n`));
+		controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+	};
+
 	const stream = await edge.streamChat({
+		mode,
 		principal: locals.principal,
 		chatId,
 		query
 	});
+
 	return new Response(streamWithFlush(stream), {
 		headers: {
 			'Content-Type': 'text/event-stream',

@@ -1,6 +1,3 @@
-import type { OpenAIMessage } from '$lib/apps/chat/core';
-import type { MemporyGetResult } from '$lib/apps/memory/core';
-
 import type { Pain, WorkflowMode } from './models';
 
 export type PainCreateCmd = {
@@ -23,23 +20,24 @@ export type PainUpdateCmd = {
 };
 
 export interface GenPainPdfCmd {
-	history: OpenAIMessage[];
-	memo: MemporyGetResult;
+	mode: WorkflowMode;
+	chatId: string;
+	userId: string;
 	painId: string;
 }
 
 export interface GenPainLandingCmd {
-	history: OpenAIMessage[];
+	mode: WorkflowMode;
+	chatId: string;
+	userId: string;
 	painId: string;
-	memo: MemporyGetResult;
 }
 
 export interface PainAskCmd {
 	mode: WorkflowMode;
 	userId: string;
 	chatId: string;
-	history: OpenAIMessage[];
-	memo: MemporyGetResult;
+	query: string;
 }
 
 export interface PainApp {

@@ -1,4 +1,7 @@
 import type { Principal } from '$lib/apps/user/core';
+import type { MessagesResponse } from '$lib/shared';
+
+import type { OpenAIMessage } from './models';
 
 export interface SendUserMessageCmd {
 	principal: Principal;
@@ -7,6 +10,11 @@ export interface SendUserMessageCmd {
 }
 
 export interface ChatApp {
-	run(cmd: SendUserMessageCmd): Promise<string>;
-	runStream(cmd: SendUserMessageCmd): Promise<ReadableStream>;
+	postProcessMessage(aiMsgId: string, content: string): Promise<void>;
+
+	prepareMessages(
+		chatId: string,
+		query: string
+	): Promise<{ aiMsg: MessagesResponse; userMsg: MessagesResponse }>;
+	getHistory(chatId: string, tokens: number): Promise<OpenAIMessage[]>;
 }

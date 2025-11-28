@@ -1,7 +1,5 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-import type { OpenAIMessage } from '$lib/apps/chat/core';
-import type { MemporyGetResult } from '$lib/apps/memory/core';
 import { grok, LLMS } from '$lib/shared/server';
 
 import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
@@ -11,22 +9,28 @@ import { DISCOVERY_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
+const llm = grok;
 
 export class DiscoveryAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
 	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, tools, memo } = cmd;
-		const history = [...cmd.history];
-		const workflowMessages = this.prepareMessages(history, memo);
+		const { dynamicArgs, tools, history } = cmd;
+		const messages: ChatCompletionMessageParam[] = [
+			...(history as ChatCompletionMessageParam[]),
+			{
+				role: 'system',
+				content: `${DISCOVERY_PROMPT}`
+			}
+		];
 
 		// Run tool loop
-		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
+		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Final response (no tools)
-		const res = await grok.chat.completions.create({
+		const res = await llm.chat.completions.create({
 			model: AGENT_MODEL,
-			messages: workflowMessages as ChatCompletionMessageParam[],
+			messages,
 			stream: false
 		});
 
@@ -37,16 +41,22 @@ export class DiscoveryAgent implements Agent {
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, tools, memo } = cmd;
-		const workflowMessages = this.prepareMessages([...cmd.history], memo);
+		const { dynamicArgs, tools, history } = cmd;
+		const messages: ChatCompletionMessageParam[] = [
+			...(history as ChatCompletionMessageParam[]),
+			{
+				role: 'system',
+				content: `${DISCOVERY_PROMPT}`
+			}
+		];
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
+		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Stream only the final response
-		const res = await grok.chat.completions.create({
+		const res = await llm.chat.completions.create({
 			model: AGENT_MODEL,
-			messages: workflowMessages as ChatCompletionMessageParam[],
+			messages,
 			stream: true
 		});
 
@@ -69,7 +79,7 @@ export class DiscoveryAgent implements Agent {
 		tools: Tool[]
 	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
-			const res = await grok.chat.completions.create({
+			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
 				messages: workflowMessages,
 				stream: false,
@@ -113,37 +123,5 @@ export class DiscoveryAgent implements Agent {
 				});
 			}
 		}
-	}
-
-	private prepareMessages(
-		history: OpenAIMessage[],
-		memo: MemporyGetResult
-	): ChatCompletionMessageParam[] {
-		const messages: ChatCompletionMessageParam[] = [];
-		const staticParts = memo.static.map((part) => `- ${part.content}`).join('\n');
-		messages.push({
-			role: 'system',
-			content: `${DISCOVERY_PROMPT}\n\nContext:\n${staticParts || 'No drafts yet.'}`
-		});
-
-		if (memo.profile && memo.profile.length > 0) {
-			const parts = memo.profile.map((part) => `- ${part.content}`).join('\n');
-			messages.push({
-				role: 'system',
-				content: `User context:\n${parts}`
-			});
-		}
-
-		if (memo.event && memo.event.length > 0) {
-			const parts = memo.event.map((part) => `- ${part.content}`).join('\n');
-			messages.push({
-				role: 'system',
-				content: `Chat context:\n${parts}`
-			});
-		}
-
-		messages.push(...(history as ChatCompletionMessageParam[]));
-
-		return messages;
 	}
 }

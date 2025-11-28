@@ -1,5 +1,3 @@
-import type { MemoryApp } from '$lib/apps/memory/core';
-import type { PainApp } from '$lib/apps/pain/core';
 import {
 	Collections,
 	MessagesRoleOptions,
@@ -11,141 +9,53 @@ import {
 } from '$lib/shared';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
 
-import {
-	Chat,
-	type ChatApp,
-	type MessageChunk,
-	type OpenAIMessage,
-	type SendUserMessageCmd
-} from '../core';
-
-const HISTORY_TOKENS = 2000;
-const INITIAL_MEMORY_TOKENS = 1000;
+import { Chat, type ChatApp, type OpenAIMessage } from '../core';
 
 export class ChatAppImpl implements ChatApp {
-	constructor(
-		private readonly memoryApp: MemoryApp,
-		private readonly painApp: PainApp
-	) {}
-
-	async run(cmd: SendUserMessageCmd): Promise<string> {
-		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
-
-		const content = await this.painApp.ask({
-			history,
-			memo,
-			userId: cmd.principal.user.id,
-			chatId: cmd.chatId,
-			mode: chat.mode
-		});
-
-		await this.postProcess(aiMsg.id, content);
-		return aiMsg.content || '';
-	}
-
-	async runStream(cmd: SendUserMessageCmd): Promise<ReadableStream> {
-		const { chat, aiMsg, history, memo } = await this.prepare(cmd);
-		const postProcess = this.postProcess;
-		const painApp = this.painApp;
-		const encoder = new TextEncoder();
-
-		return new ReadableStream({
-			async start(controller) {
-				try {
-					const sendEvent = (event: string, data: string) => {
-						controller.enqueue(encoder.encode(`event: ${event}\n`));
-						controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-					};
-
-					let content = '';
-
-					const stream = await painApp.askStream({
-						history,
-						memo,
-						userId: cmd.principal.user.id,
-						chatId: cmd.chatId,
-						mode: chat.mode
-					});
-
-					const reader = stream.getReader();
-
-					try {
-						while (true) {
-							const { done, value } = await reader.read();
-
-							if (done) {
-								break;
-							}
-
-							if (value) {
-								const chunk: MessageChunk = {
-									text: value,
-									msgId: aiMsg.id
-								};
-								content += value;
-								sendEvent('chunk', JSON.stringify(chunk));
-							}
-						}
-					} finally {
-						reader.releaseLock();
-					}
-
-					await postProcess(aiMsg.id, content);
-					sendEvent('done', '');
-					controller.close();
-				} catch (error) {
-					controller.error(error);
-				}
-			}
-		});
-	}
-
-	private async prepare(cmd: SendUserMessageCmd) {
-		const chatRec: ChatsResponse<ChatExpand> = await pb
-			.collection(Collections.Chats)
-			.getOne(cmd.chatId, { expand: 'messages_via_chat' });
-		const chat = Chat.fromResponse(chatRec);
-		const history = this.trimMessages(chat, HISTORY_TOKENS);
+	constructor() {}
+	async prepareMessages(chatId: string, query: string) {
+		const chat = await this.getChat(chatId);
 
 		if (chat.data.status === ChatsStatusOptions.empty) {
-			await pb.collection(Collections.Chats).update(cmd.chatId, {
+			await pb.collection(Collections.Chats).update(chatId, {
 				status: ChatsStatusOptions.going
 			});
 		}
 
 		const userMsg = await pb.collection(Collections.Messages).create({
-			chat: cmd.chatId,
+			chat: chatId,
 			role: MessagesRoleOptions.user,
-			content: cmd.query,
+			content: query,
 			status: MessagesStatusOptions.final
-		});
-		history.push({
-			role: 'user',
-			content: userMsg.content
 		});
 
 		const aiMsg = await pb.collection(Collections.Messages).create({
-			chat: cmd.chatId,
+			chat: chatId,
 			role: MessagesRoleOptions.ai,
 			status: MessagesStatusOptions.streaming,
 			content: ''
 		});
 
-		const memo = await this.memoryApp.get({
-			profileId: cmd.principal.user.id,
-			query: cmd.query,
-			chatId: cmd.chatId,
-			tokens: INITIAL_MEMORY_TOKENS
-		});
-
-		return { chat, aiMsg, history, memo };
+		return { aiMsg, userMsg };
 	}
 
-	private async postProcess(aiMsgId: string, content: string) {
+	async postProcessMessage(aiMsgId: string, content: string) {
 		await pb.collection(Collections.Messages).update(aiMsgId, {
 			content,
 			status: MessagesStatusOptions.final
 		});
+	}
+
+	async getHistory(chatId: string, tokens: number): Promise<OpenAIMessage[]> {
+		const chat = await this.getChat(chatId);
+		return this.trimMessages(chat, tokens);
+	}
+
+	private async getChat(chatId: string): Promise<Chat> {
+		const chatRec: ChatsResponse<ChatExpand> = await pb
+			.collection(Collections.Chats)
+			.getOne(chatId, { expand: 'messages_via_chat' });
+		return Chat.fromResponse(chatRec);
 	}
 
 	private trimMessages(chat: Chat, tokens: number): OpenAIMessage[] {

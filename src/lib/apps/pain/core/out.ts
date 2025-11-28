@@ -1,11 +1,9 @@
-import type { MemporyGetResult } from '$lib/apps/memory/core';
 import type { Tool } from '$lib/apps/llmTools/core';
 import type { OpenAIMessage } from '$lib/apps/chat/core';
 
 export type AgentRunCmd = {
 	tools: Tool[];
 	history: OpenAIMessage[];
-	memo: MemporyGetResult;
 	dynamicArgs: Record<string, unknown>;
 };
 

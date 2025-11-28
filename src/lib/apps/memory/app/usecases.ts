@@ -9,7 +9,7 @@ import {
 	type ProfileMemory,
 	type EventMemory,
 	type MemoryPutCmd,
-	type MemporyGetResult,
+	type MemoryGetResult,
 	SearchMemoriesToolSchema,
 	SaveMemoriesToolSchema
 } from '../core';
@@ -38,7 +38,7 @@ export class MemoryAppImpl implements MemoryApp {
 		};
 	}
 
-	async get(cmd: MemoryGetCmd): Promise<MemporyGetResult> {
+	async get(cmd: MemoryGetCmd): Promise<MemoryGetResult> {
 		let remainingTokens = cmd.tokens;
 		console.log('Getting memories for chat: ', cmd.chatId);
 

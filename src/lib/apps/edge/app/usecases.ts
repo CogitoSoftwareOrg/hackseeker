@@ -1,4 +1,3 @@
-import type { ChatApp } from '$lib/apps/chat/core';
 import type { PainApp } from '$lib/apps/pain/core';
 import type { UserApp } from '$lib/apps/user/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
@@ -24,42 +23,35 @@ const LANDING_CHARGE_AMOUNT = 10;
 export class EdgeAppImpl implements EdgeApp {
 	constructor(
 		private readonly userApp: UserApp,
-		private readonly chatApp: ChatApp,
 		private readonly painApp: PainApp,
 		private readonly artifactApp: ArtifactApp
 	) {}
 
 	async genPainPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const { principal, painId } = cmd;
+		const { principal, painId, chatId } = cmd;
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining < PDF_CHARGE_AMOUNT) throw new Error('Insufficient balance');
 
 		await this.painApp.genPdf({
-			painId,
-			history: [],
-			memo: {
-				static: [],
-				profile: [],
-				event: []
-			}
+			mode: 'pdf',
+			userId: principal.user.id,
+			chatId,
+			painId
 		});
 
 		await this.userApp.charge({ subId: principal.sub.id, amount: PDF_CHARGE_AMOUNT });
 	}
 
 	async genPainLanding(cmd: GenPainLandingCmd): Promise<void> {
-		const { principal, painId } = cmd;
+		const { principal, painId, chatId } = cmd;
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining < LANDING_CHARGE_AMOUNT) throw new Error('Insufficient balance');
 
 		await this.painApp.genLanding({
-			painId,
-			history: [],
-			memo: {
-				static: [],
-				profile: [],
-				event: []
-			}
+			mode: 'landing',
+			userId: principal.user.id,
+			chatId,
+			painId
 		});
 
 		await this.userApp.charge({ subId: principal.sub.id, amount: LANDING_CHARGE_AMOUNT });
@@ -98,14 +90,19 @@ export class EdgeAppImpl implements EdgeApp {
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining <= 0) throw new Error('Insufficient balance');
 
-		const chatApp = this.chatApp;
+		const painApp = this.painApp;
 		const userApp = this.userApp;
 		let charged = false;
 
 		return new ReadableStream({
 			async start(controller) {
 				try {
-					const stream = await chatApp.runStream({ principal, chatId, query });
+					const stream = await painApp.askStream({
+						mode: cmd.mode,
+						userId: principal.user.id,
+						chatId,
+						query
+					});
 					const reader = stream.getReader();
 					while (true) {
 						const { value, done } = await reader.read();
