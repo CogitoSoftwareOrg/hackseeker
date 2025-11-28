@@ -1,5 +1,9 @@
 import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
-import { grok, LLMS } from '$lib/shared/server';
+import {
+	grok,
+	// openai,
+	LLMS
+} from '$lib/shared/server';
 import type { ChatCompletionMessageParam } from 'openai/resources';
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
@@ -10,6 +14,7 @@ import { PDF_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
+const llm = grok;
 
 export class PdfAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
@@ -23,7 +28,7 @@ export class PdfAgent implements Agent {
 		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Final response (no tools)
-		const res = await grok.chat.completions.create({
+		const res = await llm.chat.completions.create({
 			model: AGENT_MODEL,
 			messages: workflowMessages as ChatCompletionMessageParam[],
 			stream: false
@@ -43,7 +48,7 @@ export class PdfAgent implements Agent {
 		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Stream only the final response
-		const res = await grok.chat.completions.create({
+		const res = await llm.chat.completions.create({
 			model: AGENT_MODEL,
 			messages: workflowMessages as ChatCompletionMessageParam[],
 			stream: true
@@ -68,7 +73,7 @@ export class PdfAgent implements Agent {
 		tools: Tool[]
 	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
-			const res = await grok.chat.completions.create({
+			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
 				messages: workflowMessages,
 				stream: false,

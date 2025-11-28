@@ -164,7 +164,7 @@
 				{:else}
 					<Button
 						target="_blank"
-						href={pb.files.getURL(pain, pain.landing)}
+						href={`/pages/${pain.id}`}
 						disabled={landingGenerating}
 						size="sm"
 						variant="ghost"
