@@ -10,7 +10,13 @@ export interface StreamChatCmd {
 	query: string;
 }
 
+export interface SearchArtifactsCmd {
+	principal: Principal;
+	painId: string;
+	queryIds: string[];
+}
 export interface EdgeApp {
+	searchArtifacts(cmd: SearchArtifactsCmd): Promise<void>;
 	startPainValidation(cmd: StartPainValidationCmd): Promise<void>;
 	streamChat(cmd: StreamChatCmd): Promise<ReadableStream>;
 }

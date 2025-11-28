@@ -5,15 +5,18 @@ import type { Artifact } from './models';
 export type ArtifactExtractCmd = {
 	userId: string;
 	painId: string;
-	searchQueryId: string;
+	queryId: string;
 	dtos: SearchResult[];
 };
 
-export type ArtifactExtractResult = {
-	markdown: string;
-	links: string[];
+export type ArtifactSearchCmd = {
+	userId: string;
+	painId: string;
+	queryIds: string[];
 };
 
 export interface ArtifactApp {
+	search(cmd: ArtifactSearchCmd): Promise<Artifact[]>;
+
 	extract(cmd: ArtifactExtractCmd): Promise<Artifact[]>;
 }

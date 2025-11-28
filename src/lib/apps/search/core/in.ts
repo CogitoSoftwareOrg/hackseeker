@@ -13,5 +13,5 @@ export type SearchResult = {
 
 export interface SearchApp {
 	generateQueries(painId: string, prompt: string): Promise<SearchQueriesResponse[]>;
-	searchQueries(queries: SearchQueriesResponse[]): Promise<SearchResult[][]>;
+	searchQueries(queryIds: string[]): Promise<SearchResult[][]>;
 }

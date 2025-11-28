@@ -1,17 +1,41 @@
 import type { ChatApp } from '$lib/apps/chat/core';
 import type { PainApp } from '$lib/apps/pain/core';
 import type { UserApp } from '$lib/apps/user/core';
+import type { ArtifactApp } from '$lib/apps/artifact/core';
 
-import type { EdgeApp, StartPainValidationCmd, StreamChatCmd } from '../core';
+import { SEARCH_LIMIT } from '$lib/apps/search/core';
+
+import type { EdgeApp, SearchArtifactsCmd, StartPainValidationCmd, StreamChatCmd } from '../core';
 
 const DEFAULT_CHARGE_AMOUNT = 1;
+
+const SEARCH_QUERY_CHARGE_AMOUNT = 1 * SEARCH_LIMIT;
 
 export class EdgeAppImpl implements EdgeApp {
 	constructor(
 		private readonly userApp: UserApp,
 		private readonly chatApp: ChatApp,
-		private readonly painApp: PainApp
+		private readonly painApp: PainApp,
+		private readonly artifactApp: ArtifactApp
 	) {}
+
+	async searchArtifacts(cmd: SearchArtifactsCmd): Promise<void> {
+		const { principal, painId, queryIds } = cmd;
+		if (!principal) throw new Error('Unauthorized');
+		if (principal.remaining <= SEARCH_QUERY_CHARGE_AMOUNT * queryIds.length)
+			throw new Error('Insufficient balance');
+
+		await this.artifactApp.search({
+			userId: principal.user.id,
+			painId,
+			queryIds
+		});
+
+		await this.userApp.charge({
+			subId: principal.sub.id,
+			amount: SEARCH_QUERY_CHARGE_AMOUNT * queryIds.length
+		});
+	}
 
 	async startPainValidation(cmd: StartPainValidationCmd): Promise<void> {
 		const { principal, painId } = cmd;

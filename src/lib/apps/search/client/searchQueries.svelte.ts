@@ -45,6 +45,7 @@ class SearchQueriesStore {
 	}
 
 	unsubscribe() {
+		this._queries = [];
 		pb.collection(Collections.SearchQueries).unsubscribe();
 	}
 }

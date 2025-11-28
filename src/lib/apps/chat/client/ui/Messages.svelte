@@ -27,7 +27,7 @@
 		loading = true;
 		setTimeout(() => {
 			loading = false;
-		}, 200);
+		}, 500);
 	});
 
 	let lastLength = 0;
@@ -36,7 +36,7 @@
 		setTimeout(() => {
 			scrollToBottom(messagesContainer);
 			loading = false;
-		}, 100);
+		}, 300);
 		lastLength = messages.length;
 	});
 

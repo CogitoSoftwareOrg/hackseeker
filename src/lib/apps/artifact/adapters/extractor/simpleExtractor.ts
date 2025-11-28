@@ -1,11 +1,11 @@
 import z from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 
-import { grok, LLMS } from '$lib/shared/server';
+import { openai, LLMS } from '$lib/shared/server';
 
 import { ExtractorResultSchema, type Extractor } from '../../core';
 
-const EXTRACTOR_MODEL = LLMS.GROK_4_1_FAST_NON_REASONING;
+const EXTRACTOR_MODEL = LLMS.GPT_5_NANO;
 const EXTRACTOR_MAX_CHARS = 15000;
 
 const EXTRACTOR_SYSTEM_PROMPT = `
@@ -50,7 +50,7 @@ export class SimpleExtractor implements Extractor {
 				: markdown;
 
 		try {
-			const res = await grok.chat.completions.create({
+			const res = await openai.chat.completions.create({
 				model: EXTRACTOR_MODEL,
 				messages: [
 					{ role: 'system', content: EXTRACTOR_SYSTEM_PROMPT },

@@ -9,13 +9,12 @@
 		Quote,
 		Zap,
 		Users,
-		Wrench,
-		ExternalLink
+		Wrench
 	} from 'lucide-svelte';
 
 	import { painsStore, PainCard } from '$lib/apps/pain/client';
-	import { searchQueriesStore } from '$lib/apps/search/client';
-	import { artifactsStore } from '$lib/apps/artifact/client';
+	import { SearchQueriesWidget, searchQueriesStore } from '$lib/apps/search/client';
+	import { ArtifactsWidget, artifactsStore } from '$lib/apps/artifact/client';
 	import {
 		PainsStatusOptions,
 		ArtifactsTypeOptions,
@@ -51,21 +50,6 @@
 		competitors: artifacts.filter((a) => a.type === ArtifactsTypeOptions.competitor).length,
 		hacks: artifacts.filter((a) => a.type === ArtifactsTypeOptions.hack).length
 	});
-
-	function getArtifactIcon(type: ArtifactsTypeOptions) {
-		switch (type) {
-			case ArtifactsTypeOptions.quote:
-				return Quote;
-			case ArtifactsTypeOptions.insight:
-				return Zap;
-			case ArtifactsTypeOptions.competitor:
-				return Users;
-			case ArtifactsTypeOptions.hack:
-				return Wrench;
-			default:
-				return Package;
-		}
-	}
 
 	function getMetrics(pain: PainsResponse): Record<string, number> | null {
 		if (!pain.metrics || typeof pain.metrics !== 'object') return null;
@@ -212,84 +196,13 @@
 							</button>
 						</div>
 
-						<!-- Tab Content -->
-						<div class="space-y-2">
-							{#if activeTab === 'queries'}
-								{#if searchQueries.length > 0}
-									{#each searchQueries as query (query.id)}
-										<div
-											class="rounded-lg border border-base-300 bg-base-100 p-2 transition-colors hover:bg-base-200"
-										>
-											<div class="flex items-start justify-between gap-2">
-												<p class="flex-1 text-sm">{query.query}</p>
-												<span class="badge badge-outline badge-xs shrink-0 capitalize">
-													{query.type?.replace(/([A-Z])/g, ' $1').trim() || 'general'}
-												</span>
-											</div>
-										</div>
-									{/each}
-								{:else}
-									<div
-										class="flex items-center justify-center gap-2 py-4 text-sm text-base-content/50"
-									>
-										<span class="loading loading-spinner loading-xs"></span>
-										<span>Generating queries...</span>
-									</div>
-								{/if}
-							{:else if artifacts.length > 0}
-								{#each artifacts as artifact (artifact.id)}
-									{@const Icon = getArtifactIcon(artifact.type)}
-									<div
-										class="rounded-lg border border-base-300 bg-base-100 p-2 transition-colors hover:bg-base-200"
-									>
-										<div class="flex items-start gap-2">
-											<div
-												class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-base-200"
-											>
-												<Icon size={12} class="text-base-content/60" />
-											</div>
-											<div class="min-w-0 flex-1">
-												<p class="line-clamp-2 text-sm">
-													{typeof artifact.payload === 'object' && artifact.payload !== null
-														? (artifact.payload as Record<string, unknown>).content ||
-															(artifact.payload as Record<string, unknown>).description ||
-															(artifact.payload as Record<string, unknown>).name ||
-															JSON.stringify(artifact.payload)
-														: artifact.payload}
-												</p>
-												{#if artifact.source}
-													<a
-														href={artifact.source}
-														target="_blank"
-														rel="noopener noreferrer"
-														class="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-													>
-														<ExternalLink size={10} />
-														Source
-													</a>
-												{/if}
-											</div>
-										</div>
-									</div>
-								{/each}
-							{:else}
-								<div
-									class="flex items-center justify-center gap-2 py-4 text-sm text-base-content/50"
-								>
-									<span class="loading loading-spinner loading-xs"></span>
-									<span>Extracting artifacts...</span>
-								</div>
-							{/if}
-						</div>
+						<!-- Tab Content: Widgets -->
+						{#if activeTab === 'queries'}
+							<SearchQueriesWidget {pain} {compact} />
+						{:else}
+							<ArtifactsWidget {compact} />
+						{/if}
 					{/if}
-
-					<!-- Other Drafts -->
-					<!-- {#if draftPains.length > 0}
-					<div class="divider my-2 text-xs">Other Drafts</div>
-					{#each draftPains as pain (pain.id)}
-						<PainCard {pain} {compact} />
-					{/each}
-				{/if} -->
 				</div>
 			{/if}
 		</div>

@@ -1,5 +1,7 @@
-import { ArtifactsImportanceOptions, Collections, pb } from '$lib';
 import type z from 'zod';
+
+import { ArtifactsImportanceOptions, Collections, pb } from '$lib';
+import type { SearchApp, SearchResult } from '$lib/apps/search/core';
 
 import {
 	Artifact,
@@ -7,23 +9,41 @@ import {
 	type ArtifactApp,
 	type ArtifactExtractCmd,
 	type ArtifactIndexer,
+	type ArtifactSearchCmd,
 	type Extractor
 } from '../core';
-import type { SearchResult } from '$lib/apps/search/core';
 
 export class ArtifactAppImpl implements ArtifactApp {
 	constructor(
+		// ADAPTERS
 		private readonly extractor: Extractor,
-		private readonly artifactIndexer: ArtifactIndexer
+		private readonly artifactIndexer: ArtifactIndexer,
+
+		// APPS
+		private readonly searchApp: SearchApp
 	) {}
 
+	async search(cmd: ArtifactSearchCmd): Promise<Artifact[]> {
+		const results = await this.searchApp.searchQueries(cmd.queryIds);
+
+		const artifacts: Artifact[] = [];
+		for (let i = 0; i < results.length; i++) {
+			const result = results[i];
+			const queryId = cmd.queryIds[i];
+			const extracted = await this.extract({ ...cmd, dtos: result, queryId });
+			artifacts.push(...extracted);
+		}
+
+		return artifacts;
+	}
+
 	async extract(cmd: ArtifactExtractCmd): Promise<Artifact[]> {
-		const { userId, dtos } = cmd;
+		const { userId, painId, queryId, dtos } = cmd;
 
 		const artifacts = await Promise.all(
 			dtos.map(async (dto) => {
 				const result = await this.extractor.extract(dto.markdown);
-				const artifacts = await this.parseArtifacts(cmd.painId, cmd.searchQueryId, dto, result);
+				const artifacts = await this.parseArtifacts(painId, queryId, dto, result);
 				await this.artifactIndexer.add(userId, artifacts);
 				return artifacts;
 			})
@@ -33,7 +53,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 
 	async parseArtifacts(
 		painId: string,
-		searchQueryId: string,
+		queryId: string,
 		dto: SearchResult,
 		schema: z.infer<typeof ExtractorResultSchema>
 	): Promise<Artifact[]> {
@@ -42,7 +62,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 			const rec = await pb.collection(Collections.Artifacts).create({
 				title: `Quote from ${dto.title}`,
 				pain: painId,
-				searchQuery: searchQueryId,
+				searchQuery: queryId,
 				source: dto.url,
 				type: 'quote',
 				metadata: dto.metadata,
@@ -55,7 +75,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 			const rec = await pb.collection(Collections.Artifacts).create({
 				title: `Insight from ${dto.title}`,
 				pain: painId,
-				searchQuery: searchQueryId,
+				searchQuery: queryId,
 				source: dto.url,
 				type: 'insight',
 				payload: insight,
@@ -68,7 +88,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 			const rec = await pb.collection(Collections.Artifacts).create({
 				title: `Competitor ${competitor.name}`,
 				pain: painId,
-				searchQuery: searchQueryId,
+				searchQuery: queryId,
 				source: dto.url,
 				type: 'competitor',
 				payload: competitor,
@@ -81,7 +101,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 			const rec = await pb.collection(Collections.Artifacts).create({
 				title: `Hack from ${dto.title}`,
 				pain: painId,
-				searchQuery: searchQueryId,
+				searchQuery: queryId,
 				source: dto.url,
 				type: 'hack',
 				payload: hack,

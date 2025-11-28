@@ -3,9 +3,7 @@ import type { SearchData, SearchResultWeb } from '@mendable/firecrawl-js';
 import { firecrawl } from '$lib/shared/server';
 import { Collections, pb, type SearchQueriesResponse } from '$lib/shared';
 
-import type { SearchApp, SearchResult, QueryGenerator } from '../core';
-
-const SEARCH_LIMIT = 2;
+import { type SearchApp, type SearchResult, type QueryGenerator, SEARCH_LIMIT } from '../core';
 
 export class SearchAppImpl implements SearchApp {
 	constructor(private readonly queryGenerator: QueryGenerator) {}
@@ -24,7 +22,13 @@ export class SearchAppImpl implements SearchApp {
 		return searchQueries;
 	}
 
-	async searchQueries(queries: SearchQueriesResponse[]): Promise<SearchResult[][]> {
+	async searchQueries(queryIds: string[]): Promise<SearchResult[][]> {
+		const queries = await pb.collection(Collections.SearchQueries).getFullList({
+			filter: `id ?= "${queryIds.join(',')}"`,
+			sort: '-created'
+		});
+		console.log('queries', queries);
+
 		const results = await Promise.all(
 			queries.map(async (q) => {
 				const res = await this.searchQuery(q.id, q.query);
@@ -51,8 +55,9 @@ export class SearchAppImpl implements SearchApp {
 		return results;
 	}
 
-	async searchQuery(id: string, query: string, limit?: number): Promise<SearchData> {
-		const res = await firecrawl.search(query, {
+	async searchQuery(id: string, query: string, site?: string, limit?: number): Promise<SearchData> {
+		const q = site ? `${query} site:${site}` : query;
+		const res = await firecrawl.search(q, {
 			limit: limit ?? SEARCH_LIMIT,
 			scrapeOptions: { formats: ['markdown'] }
 		});

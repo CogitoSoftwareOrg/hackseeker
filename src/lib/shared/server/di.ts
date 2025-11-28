@@ -32,7 +32,7 @@ export const getDI = () => {
 	if (di) return di;
 
 	const searchApp = getSearchApp();
-	const artifactApp = getArtifactApp();
+	const artifactApp = getArtifactApp(searchApp);
 
 	const userApp = getUserApp();
 	const painApp = getPainApp(searchApp, artifactApp);
@@ -41,7 +41,7 @@ export const getDI = () => {
 	const brainApp = getBrainApp(memoryApp, painApp);
 	const chatApp = getChatApp(memoryApp, brainApp);
 
-	const edgeApp = getEdgeApp(userApp, chatApp, painApp);
+	const edgeApp = getEdgeApp(userApp, chatApp, painApp, artifactApp);
 	const jobApp = getJobApp();
 
 	di = {

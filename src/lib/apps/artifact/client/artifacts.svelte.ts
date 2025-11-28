@@ -49,6 +49,7 @@ class ArtifactsStore {
 	}
 
 	unsubscribe() {
+		this._artifacts = [];
 		pb.collection(Collections.Artifacts).unsubscribe();
 	}
 }
