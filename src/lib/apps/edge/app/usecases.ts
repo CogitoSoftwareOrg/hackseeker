@@ -5,11 +5,21 @@ import type { ArtifactApp } from '$lib/apps/artifact/core';
 
 import { SEARCH_LIMIT } from '$lib/apps/search/core';
 
-import type { EdgeApp, SearchArtifactsCmd, StartPainValidationCmd, StreamChatCmd } from '../core';
+import type {
+	EdgeApp,
+	GenPainPdfCmd,
+	GenPainLandingCmd,
+	SearchArtifactsCmd,
+	StartPainValidationCmd,
+	StreamChatCmd
+} from '../core';
 
 const DEFAULT_CHARGE_AMOUNT = 1;
 
 const SEARCH_QUERY_CHARGE_AMOUNT = 1 * SEARCH_LIMIT;
+
+const PDF_CHARGE_AMOUNT = 10;
+const LANDING_CHARGE_AMOUNT = 10;
 
 export class EdgeAppImpl implements EdgeApp {
 	constructor(
@@ -18,6 +28,42 @@ export class EdgeAppImpl implements EdgeApp {
 		private readonly painApp: PainApp,
 		private readonly artifactApp: ArtifactApp
 	) {}
+
+	async genPainPdf(cmd: GenPainPdfCmd): Promise<void> {
+		const { principal, painId } = cmd;
+		if (!principal) throw new Error('Unauthorized');
+		if (principal.remaining < PDF_CHARGE_AMOUNT) throw new Error('Insufficient balance');
+
+		await this.painApp.genPdf({
+			painId,
+			history: [],
+			memo: {
+				static: [],
+				profile: [],
+				event: []
+			}
+		});
+
+		await this.userApp.charge({ subId: principal.sub.id, amount: PDF_CHARGE_AMOUNT });
+	}
+
+	async genPainLanding(cmd: GenPainLandingCmd): Promise<void> {
+		const { principal, painId } = cmd;
+		if (!principal) throw new Error('Unauthorized');
+		if (principal.remaining < LANDING_CHARGE_AMOUNT) throw new Error('Insufficient balance');
+
+		await this.painApp.genLanding({
+			painId,
+			history: [],
+			memo: {
+				static: [],
+				profile: [],
+				event: []
+			}
+		});
+
+		await this.userApp.charge({ subId: principal.sub.id, amount: LANDING_CHARGE_AMOUNT });
+	}
 
 	async searchArtifacts(cmd: SearchArtifactsCmd): Promise<void> {
 		const { principal, painId, queryIds } = cmd;

@@ -1,3 +1,3 @@
-export { DiscoveryAgent, ValidationAgent } from './agent';
+export { DiscoveryAgent, ValidationAgent, PdfAgent, LandingAgent } from './agent';
 export { SimpleSynthesizer } from './synthesizer';
-export { createPainTool, updatePainTool } from './tools';
+export { PdfRenderer } from './renderer';

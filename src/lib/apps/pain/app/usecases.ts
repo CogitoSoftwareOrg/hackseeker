@@ -1,5 +1,5 @@
 import { Collections, PainsStatusOptions, pb, type PainsResponse } from '$lib/shared';
-import type { Agent, Tool } from '$lib/apps/llmTools/core';
+import type { Tool } from '$lib/apps/llmTools/core';
 import type { SearchApp } from '$lib/apps/search/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 
@@ -11,28 +11,79 @@ import {
 	type PainKeywords,
 	type PainMetrics,
 	type PainUpdateCmd,
-	type WorkflowMode
+	type WorkflowMode,
+	CreatePainToolSchema,
+	UpdatePainToolSchema,
+	type GenPainPdfCmd,
+	type GenPainLandingCmd,
+	type Agent,
+	type Renderer
 } from '../core';
-import { createPainTool, updatePainTool } from '../adapters';
 
 export class PainAppImpl implements PainApp {
 	constructor(
+		// Adapters
 		private readonly agents: Record<WorkflowMode, Agent>,
-
+		private readonly renderer: Renderer,
+		// Apps
 		private readonly searchApp: SearchApp,
 		private readonly artifactApp: ArtifactApp
 	) {}
+
+	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
+		const pain = await this.getById(cmd.painId);
+		cmd.memo.static.push({
+			content: pain.prompt,
+			kind: 'static',
+			tokens: pain.prompt.length
+		});
+
+		const agent = this.agents['pdf'];
+		const pdfContent = await agent.run({
+			tools: [],
+			history: cmd.history,
+			memo: cmd.memo,
+			dynamicArgs: {}
+		});
+		const pdf = await this.renderer.render(pdfContent);
+
+		const data = new FormData();
+		data.append('report', pdf, 'report.pdf');
+		await pb.collection(Collections.Pains).update(cmd.painId, data);
+	}
+
+	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
+		const pain = await this.getById(cmd.painId);
+		const agent = this.agents['landing'];
+
+		cmd.memo.static.push({
+			content: pain.prompt,
+			kind: 'static',
+			tokens: pain.prompt.length
+		});
+
+		const landing = await agent.run({
+			tools: [],
+			history: cmd.history,
+			memo: cmd.memo,
+			dynamicArgs: {}
+		});
+
+		const data = new FormData();
+		data.append('landing', new Blob([landing]), 'landing.txt');
+		await pb.collection(Collections.Pains).update(cmd.painId, data);
+	}
 
 	async ask(cmd: PainAskCmd): Promise<string> {
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
-		const tools: Tool[] = [{ schema: createPainTool, callback: this.create }];
+		const tools: Tool[] = [{ schema: CreatePainToolSchema, callback: this.create }];
 		const pains: Pain[] = [];
 
 		if (cmd.mode === 'discovery') {
 			// @ts-expect-error zodFunction is not typed
-			tools.push({ schema: updatePainTool, callback: this.update });
+			tools.push({ schema: UpdatePainToolSchema, callback: this.update });
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.draft)));
 		} else if (cmd.mode === 'validation') {
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
@@ -47,16 +98,16 @@ export class PainAppImpl implements PainApp {
 		}
 
 		const result = await agent.run({
-			userId: cmd.userId,
-			chatId: cmd.chatId,
 			tools,
 			history: cmd.history,
-			memo: cmd.memo
+			memo: cmd.memo,
+			dynamicArgs: {
+				userId: cmd.userId,
+				chatId: cmd.chatId
+			}
 		});
 
-		// Return the last assistant message content
-		const lastMessage = result.history[result.history.length - 1];
-		return lastMessage?.content || '';
+		return result;
 	}
 
 	async askStream(cmd: PainAskCmd): Promise<ReadableStream> {
@@ -83,11 +134,13 @@ export class PainAppImpl implements PainApp {
 		}
 
 		return agent.runStream({
-			userId: cmd.userId,
-			chatId: cmd.chatId,
 			tools,
 			history: cmd.history,
-			memo: cmd.memo
+			memo: cmd.memo,
+			dynamicArgs: {
+				userId: cmd.userId,
+				chatId: cmd.chatId
+			}
 		});
 	}
 

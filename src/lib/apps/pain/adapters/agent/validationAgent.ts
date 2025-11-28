@@ -1,32 +1,27 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
-import type { MemoryApp, MemporyGetResult } from '$lib/apps/memory/core';
-import type { PainUpdateCmd } from '$lib/apps/pain/core';
+import type { MemporyGetResult } from '$lib/apps/memory/core';
 import { grok, LLMS } from '$lib/shared/server';
 
-import type { Agent, AgentResult, AgentRunCmd, Tool, ToolCall } from '$lib/apps/llmTools/core';
+import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
 
-import { updatePainTool } from '../tools';
+import { type Agent, type AgentRunCmd } from '../../core';
 import { VALIDATION_PROMPT } from './prompts';
 
 const MAX_LOOP_ITERATIONS = 5;
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 
 export class ValidationAgent implements Agent {
-	tools: Tool[];
+	constructor(public readonly tools: Tool[]) {}
 
-	constructor(memoryApp: MemoryApp, tools: Tool[]) {
-		this.tools = [memoryApp.searchTool, memoryApp.putTool, ...tools];
-	}
-
-	async run(cmd: AgentRunCmd): Promise<AgentResult> {
-		const { tools, memo } = cmd;
+	async run(cmd: AgentRunCmd): Promise<string> {
+		const { dynamicArgs, tools, memo } = cmd;
 		const history = [...cmd.history];
 		const workflowMessages = this.prepareMessages(history, memo);
 
 		// Run tool loop
-		await this.runToolLoop(workflowMessages, [...tools, ...this.tools]);
+		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Final response (no tools)
 		const res = await grok.chat.completions.create({
@@ -38,15 +33,15 @@ export class ValidationAgent implements Agent {
 		const content = res.choices[0].message.content || '';
 		history.push({ role: 'assistant', content });
 
-		return { history, memo };
+		return content;
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { tools, memo } = cmd;
+		const { dynamicArgs, tools, memo } = cmd;
 		const workflowMessages = this.prepareMessages([...cmd.history], memo);
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(workflowMessages, [...tools, ...this.tools]);
+		await this.runToolLoop(workflowMessages, dynamicArgs, [...tools, ...this.tools]);
 
 		// Stream only the final response
 		const res = await grok.chat.completions.create({
@@ -70,6 +65,7 @@ export class ValidationAgent implements Agent {
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
+		dynamicArgs: Record<string, unknown>,
 		tools: Tool[]
 	): Promise<void> {
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
@@ -109,11 +105,11 @@ export class ValidationAgent implements Agent {
 			for (const toolCall of toolCalls) {
 				const tool = tools.find((t) => t.schema.function.name === toolCall.name);
 				if (!tool) throw new Error(`Unknown tool: ${toolCall.name}`);
-				const result = await this.executeTool(toolCall, tool);
+				await tool.callback({ ...dynamicArgs, ...toolCall.args });
 				workflowMessages.push({
 					role: 'tool',
 					tool_call_id: toolCall.id,
-					content: result
+					content: `Tool ${toolCall.name} executed successfully`
 				});
 			}
 		}
@@ -150,18 +146,5 @@ export class ValidationAgent implements Agent {
 		messages.push(...(history as ChatCompletionMessageParam[]));
 
 		return messages;
-	}
-
-	private async executeTool(toolCall: ToolCall, tool: Tool): Promise<string> {
-		if (toolCall.name === updatePainTool.function.name) {
-			const dto: PainUpdateCmd = {
-				id: toolCall.args.id as string,
-				...toolCall.args
-			};
-			await tool.callback(dto);
-			return 'Draft updated';
-		}
-
-		return `Unknown tool: ${toolCall.name}`;
 	}
 }

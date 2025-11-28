@@ -17,6 +17,7 @@ export enum Collections {
 	Feedbacks = "feedbacks",
 	JobRuns = "jobRuns",
 	Jobs = "jobs",
+	Leads = "leads",
 	Messages = "messages",
 	Pains = "pains",
 	SearchQueries = "searchQueries",
@@ -213,6 +214,15 @@ export type JobsRecord<Targs = unknown> = {
 	user?: RecordIdString
 }
 
+export type LeadsRecord<Tpayload = unknown> = {
+	contact?: string
+	created: IsoAutoDateString
+	id: string
+	pain?: RecordIdString
+	payload?: null | Tpayload
+	updated: IsoAutoDateString
+}
+
 export enum MessagesRoleOptions {
 	"user" = "user",
 	"ai" = "ai",
@@ -245,9 +255,12 @@ export type PainsRecord<Tkeywords = unknown, Tmetrics = unknown> = {
 	id: string
 	jtbd?: string
 	keywords?: null | Tkeywords
+	landing?: FileNameString
 	metrics?: null | Tmetrics
 	problem?: string
+	report?: FileNameString
 	segment?: string
+	slug?: string
 	status: PainsStatusOptions
 	updated: IsoAutoDateString
 	user?: RecordIdString
@@ -335,6 +348,7 @@ export type EventsResponse<Tmetadata = unknown, Texpand = unknown> = Required<Ev
 export type FeedbacksResponse<Texpand = unknown> = Required<FeedbacksRecord> & BaseSystemFields<Texpand>
 export type JobRunsResponse<Tresult = unknown, Texpand = unknown> = Required<JobRunsRecord<Tresult>> & BaseSystemFields<Texpand>
 export type JobsResponse<Targs = unknown, Texpand = unknown> = Required<JobsRecord<Targs>> & BaseSystemFields<Texpand>
+export type LeadsResponse<Tpayload = unknown, Texpand = unknown> = Required<LeadsRecord<Tpayload>> & BaseSystemFields<Texpand>
 export type MessagesResponse<Tmetadata = unknown, Texpand = unknown> = Required<MessagesRecord<Tmetadata>> & BaseSystemFields<Texpand>
 export type PainsResponse<Tkeywords = unknown, Tmetrics = unknown, Texpand = unknown> = Required<PainsRecord<Tkeywords, Tmetrics>> & BaseSystemFields<Texpand>
 export type SearchQueriesResponse<Texpand = unknown> = Required<SearchQueriesRecord> & BaseSystemFields<Texpand>
@@ -355,6 +369,7 @@ export type CollectionRecords = {
 	feedbacks: FeedbacksRecord
 	jobRuns: JobRunsRecord
 	jobs: JobsRecord
+	leads: LeadsRecord
 	messages: MessagesRecord
 	pains: PainsRecord
 	searchQueries: SearchQueriesRecord
@@ -374,6 +389,7 @@ export type CollectionResponses = {
 	feedbacks: FeedbacksResponse
 	jobRuns: JobRunsResponse
 	jobs: JobsResponse
+	leads: LeadsResponse
 	messages: MessagesResponse
 	pains: PainsResponse
 	searchQueries: SearchQueriesResponse

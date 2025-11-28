@@ -22,6 +22,18 @@ export type PainUpdateCmd = {
 	keywords?: string[];
 };
 
+export interface GenPainPdfCmd {
+	history: OpenAIMessage[];
+	memo: MemporyGetResult;
+	painId: string;
+}
+
+export interface GenPainLandingCmd {
+	history: OpenAIMessage[];
+	painId: string;
+	memo: MemporyGetResult;
+}
+
 export interface PainAskCmd {
 	mode: WorkflowMode;
 	userId: string;
@@ -33,6 +45,9 @@ export interface PainAskCmd {
 export interface PainApp {
 	ask(cmd: PainAskCmd): Promise<string>;
 	askStream(cmd: PainAskCmd): Promise<ReadableStream>;
+
+	genPdf(cmd: GenPainPdfCmd): Promise<void>;
+	genLanding(cmd: GenPainLandingCmd): Promise<void>;
 
 	getByChatId(chatId: string): Promise<Pain[]>;
 

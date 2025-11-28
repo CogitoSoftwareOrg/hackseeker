@@ -8,7 +8,8 @@ class PainApi {
 		});
 		if (!response.ok) throw new Error('Failed to start validation', { cause: response.statusText });
 
-		await pb.collection(Collections.Chats).update(chatId, { pain: painId });
+		const pain = await pb.collection(Collections.Pains).getOne(painId);
+		await pb.collection(Collections.Chats).update(chatId, { pain: painId, title: pain.segment });
 	}
 
 	async archive(id: string) {
@@ -18,6 +19,24 @@ class PainApi {
 	async update(id: string, dto: Update<Collections.Pains>) {
 		const pain = await pb.collection(Collections.Pains).update(id, dto);
 		return pain;
+	}
+
+	async genPdf(id: string) {
+		const response = await fetch(`/api/pains/${id}/pdf`, {
+			method: 'POST',
+			credentials: 'include'
+		});
+		if (!response.ok) throw new Error('Failed to generate PDF', { cause: response.statusText });
+		return response.json();
+	}
+
+	async genLanding(id: string) {
+		const response = await fetch(`/api/pains/${id}/landing`, {
+			method: 'POST',
+			credentials: 'include'
+		});
+		if (!response.ok) throw new Error('Failed to generate landing', { cause: response.statusText });
+		return response.json();
 	}
 }
 

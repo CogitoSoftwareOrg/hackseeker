@@ -1,6 +1,3 @@
-import z from 'zod';
-import { zodFunction } from 'openai/helpers/zod.js';
-
 import type { Tool } from '$lib/apps/llmTools/core';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
 
@@ -13,9 +10,8 @@ import {
 	type EventMemory,
 	type MemoryPutCmd,
 	type MemporyGetResult,
-	ProfileType,
-	Importance,
-	EventType
+	SearchMemoriesToolSchema,
+	SaveMemoriesToolSchema
 } from '../core';
 
 const DAYS_TO_SEARCH_LATEST_MEMORIES = 7;
@@ -30,40 +26,13 @@ export class MemoryAppImpl implements MemoryApp {
 	) {
 		this.searchTool = {
 			// @ts-expect-error zodFunction is not typed
-			schema: zodFunction({
-				name: 'search_memories',
-				description: 'Search the memories for relevant information',
-				parameters: z.object({
-					query: z.string().describe('The query to search for')
-				})
-			}),
+			schema: SearchMemoriesToolSchema,
 			// @ts-expect-error zodFunction is not typed
 			callback: this.get
 		};
 		this.putTool = {
 			// @ts-expect-error zodFunction is not typed
-			schema: zodFunction({
-				name: 'save_memories',
-				description: 'Save important new memories',
-				parameters: z.object({
-					profiles: z.array(
-						z.object({
-							type: z.enum(Object.values(ProfileType)).describe('The type of the profile'),
-							importance: z
-								.enum(Object.values(Importance))
-								.describe('The importance of the profile'),
-							content: z.string().describe('The content of the profile')
-						})
-					),
-					events: z.array(
-						z.object({
-							type: z.enum(Object.values(EventType)).describe('The type of the event'),
-							importance: z.enum(Object.values(Importance)).describe('The importance of the event'),
-							content: z.string().describe('The content of the event')
-						})
-					)
-				})
-			}),
+			schema: SaveMemoriesToolSchema,
 			// @ts-expect-error zodFunction is not typed
 			callback: this.put
 		};

@@ -4,10 +4,13 @@ export interface StartPainValidationCmd {
 	principal: Principal;
 	painId: string;
 }
-export interface StreamChatCmd {
+export interface GenPainPdfCmd {
 	principal: Principal;
-	chatId: string;
-	query: string;
+	painId: string;
+}
+export interface GenPainLandingCmd {
+	principal: Principal;
+	painId: string;
 }
 
 export interface SearchArtifactsCmd {
@@ -15,7 +18,16 @@ export interface SearchArtifactsCmd {
 	painId: string;
 	queryIds: string[];
 }
+
+export interface StreamChatCmd {
+	principal: Principal;
+	chatId: string;
+	query: string;
+}
+
 export interface EdgeApp {
+	genPainPdf(cmd: GenPainPdfCmd): Promise<void>;
+	genPainLanding(cmd: GenPainLandingCmd): Promise<void>;
 	searchArtifacts(cmd: SearchArtifactsCmd): Promise<void>;
 	startPainValidation(cmd: StartPainValidationCmd): Promise<void>;
 	streamChat(cmd: StreamChatCmd): Promise<ReadableStream>;

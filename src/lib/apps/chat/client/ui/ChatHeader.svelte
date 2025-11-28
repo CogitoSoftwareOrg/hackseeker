@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { Pencil, Check, X, Menu, Lightbulb, Search, PanelRight } from 'lucide-svelte';
-	import type { WorkflowMode } from '$lib/apps/llmTools/core';
 
 	import { chatsStore, chatApi } from '$lib/apps/chat/client';
-	import { painsStore } from '$lib/apps/pain/client';
-	import { PainsStatusOptions } from '$lib/shared';
+	import type { WorkflowMode } from '$lib/apps/pain/core';
 	import { Button, uiStore } from '$lib/shared/ui';
 
 	interface Props {
@@ -15,11 +13,8 @@
 	let { chatId, class: className = '' }: Props = $props();
 
 	const chat = $derived(chatsStore.chats.find((c) => c.id === chatId));
-	const pains = $derived(painsStore.getByChatId(chatId));
 
-	const mode: WorkflowMode = $derived(
-		pains.some((p) => p.status === PainsStatusOptions.validation) ? 'validation' : 'discovery'
-	);
+	const mode: WorkflowMode = $derived(chat?.pain ? 'validation' : 'discovery');
 
 	let isEditingTitle = $state(false);
 	let editedTitle = $state('');

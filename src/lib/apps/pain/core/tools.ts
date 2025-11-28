@@ -1,7 +1,7 @@
-import z from 'zod';
 import { zodFunction } from 'openai/helpers/zod.js';
+import z from 'zod';
 
-export const createPainTool = zodFunction({
+export const CreatePainToolSchema = zodFunction({
 	name: 'create_pain',
 	description: 'Create a new pain draft',
 	parameters: z.object({
@@ -12,7 +12,7 @@ export const createPainTool = zodFunction({
 	})
 });
 
-export const updatePainTool = zodFunction({
+export const UpdatePainToolSchema = zodFunction({
 	name: 'update_pain',
 	description: 'Update a pain draft',
 	parameters: z.object({

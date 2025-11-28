@@ -32,12 +32,12 @@
 
 	let lastLength = 0;
 	$effect(() => {
-		if (lastLength === messages.length) return;
 		setTimeout(() => {
-			scrollToBottom(messagesContainer);
 			loading = false;
+			if (lastLength === messages.length) return;
+			scrollToBottom(messagesContainer);
+			lastLength = messages.length;
 		}, 300);
-		lastLength = messages.length;
 	});
 
 	function onscroll() {

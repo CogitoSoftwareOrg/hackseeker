@@ -10,17 +10,22 @@
 		Quote,
 		Zap,
 		Users,
-		Wrench
+		Wrench,
+		File,
+		Landmark
 	} from 'lucide-svelte';
 
-	import { painsStore, PainCard } from '$lib/apps/pain/client';
+	import { painsStore, PainCard, painApi } from '$lib/apps/pain/client';
 	import { SearchQueriesWidget, searchQueriesStore } from '$lib/apps/search/client';
 	import { ArtifactsWidget, artifactsStore } from '$lib/apps/artifact/client';
 	import {
 		PainsStatusOptions,
 		ArtifactsTypeOptions,
 		type PainsResponse,
-		type ChatsResponse
+		type ChatsResponse,
+		Button,
+		Modal,
+		pb
 	} from '$lib/shared';
 
 	interface Props {
@@ -41,6 +46,12 @@
 
 	const mode: WorkflowMode = $derived(chat.pain ? 'validation' : 'discovery');
 
+	let pdfModalOpen = $state(false);
+	let landingModalOpen = $state(false);
+
+	let landingGenerating = $state(false);
+	let pdfGenerating = $state(false);
+
 	// Tabs state
 	let activeTab: 'queries' | 'artifacts' = $state('queries');
 
@@ -56,12 +67,45 @@
 		if (!pain.metrics || typeof pain.metrics !== 'object') return null;
 		return pain.metrics as Record<string, number>;
 	}
+
+	async function genPdf() {
+		if (!pain) return;
+		pdfModalOpen = false;
+
+		try {
+			pdfGenerating = true;
+			await painApi.genPdf(pain.id);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			pdfGenerating = false;
+		}
+	}
+
+	async function genLanding() {
+		if (!pain) return;
+		landingModalOpen = false;
+
+		try {
+			landingGenerating = true;
+			await painApi.genLanding(pain.id);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			landingGenerating = false;
+		}
+	}
 </script>
 
 {#if chat}
 	<div class={['flex h-full flex-col overflow-hidden', className]}>
 		<!-- Header -->
-		<header class={['shrink-0 border-b border-base-300 h-12', compact ? 'px-3' : 'px-4']}>
+		<header
+			class={[
+				'shrink-0 border-b border-base-300 h-12 flex items-center justify-between',
+				compact ? 'px-3' : 'px-4'
+			]}
+		>
 			<div class="flex items-center gap-2 h-full">
 				{#if mode === 'discovery'}
 					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/20">
@@ -80,6 +124,55 @@
 						{mode === 'discovery' ? 'Identify problems worth solving' : 'Researching your pain'}
 					</p>
 				</div>
+			</div>
+
+			<div>
+				{#if !pain?.report}
+					<Button
+						disabled={pdfGenerating}
+						size="sm"
+						variant="ghost"
+						onclick={() => (pdfModalOpen = true)}
+					>
+						<File size={16} />
+						Gen PDF
+					</Button>
+				{:else}
+					<Button
+						target="_blank"
+						href={pb.files.getURL(pain, pain.report)}
+						disabled={pdfGenerating}
+						size="sm"
+						variant="ghost"
+						onclick={() => (pdfModalOpen = true)}
+					>
+						<File size={16} />
+						View PDF
+					</Button>
+				{/if}
+
+				{#if !pain?.landing}
+					<Button
+						disabled={landingGenerating}
+						size="sm"
+						variant="ghost"
+						onclick={() => (landingModalOpen = true)}
+					>
+						<Landmark size={16} />
+						Gen Landing
+					</Button>
+				{:else}
+					<Button
+						target="_blank"
+						href={pb.files.getURL(pain, pain.landing)}
+						disabled={landingGenerating}
+						size="sm"
+						variant="ghost"
+					>
+						<Landmark size={16} />
+						View Landing
+					</Button>
+				{/if}
 			</div>
 		</header>
 
@@ -209,3 +302,21 @@
 		</div>
 	</div>
 {/if}
+
+<Modal backdrop open={pdfModalOpen} onclose={() => (pdfModalOpen = false)}>
+	<h3 class="font-bold text-lg">Gen PDF</h3>
+	<p>Generating a PDF report for your pain. This may take a few minutes.</p>
+	<div class="modal-action">
+		<Button variant="ghost" onclick={() => (pdfModalOpen = false)}>Cancel</Button>
+		<Button variant="solid" onclick={() => genPdf()}>Generate</Button>
+	</div>
+</Modal>
+
+<Modal backdrop open={landingModalOpen} onclose={() => (landingModalOpen = false)}>
+	<h3 class="font-bold text-lg">Gen Landing</h3>
+	<p>Generating a landing page for your pain. This may take a few minutes.</p>
+	<div class="modal-action">
+		<Button variant="ghost" onclick={() => (landingModalOpen = false)}>Cancel</Button>
+		<Button variant="solid" onclick={() => genLanding()}>Generate</Button>
+	</div>
+</Modal>

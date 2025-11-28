@@ -1,18 +1,17 @@
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
+import { grok, LLMS } from '$lib/shared/server';
+import type { ChatCompletionMessageParam } from 'openai/resources';
 
 import type { OpenAIMessage } from '$lib/apps/chat/core';
 import type { MemporyGetResult } from '$lib/apps/memory/core';
-import { grok, LLMS } from '$lib/shared/server';
 
-import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
-
-import { type Agent, type AgentRunCmd } from '../../core';
-import { DISCOVERY_PROMPT } from './prompts';
+import type { Agent, AgentRunCmd } from '../../core';
+import { PDF_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
 
-export class DiscoveryAgent implements Agent {
+export class PdfAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
 	async run(cmd: AgentRunCmd): Promise<string> {
@@ -120,10 +119,9 @@ export class DiscoveryAgent implements Agent {
 		memo: MemporyGetResult
 	): ChatCompletionMessageParam[] {
 		const messages: ChatCompletionMessageParam[] = [];
-		const staticParts = memo.static.map((part) => `- ${part.content}`).join('\n');
 		messages.push({
 			role: 'system',
-			content: `${DISCOVERY_PROMPT}\n\nContext:\n${staticParts || 'No drafts yet.'}`
+			content: PDF_PROMPT
 		});
 
 		if (memo.profile && memo.profile.length > 0) {
