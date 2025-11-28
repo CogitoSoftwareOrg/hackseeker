@@ -121,7 +121,13 @@
 
 	<div class="flex-1 overflow-y-auto px-2">
 		<ul class="menu w-full gap-1">
-			<li class="menu-title">Validation Chats</li>
+			{#if validationChats.length > 0}
+				{#if sidebarExpanded}
+					<li class="menu-title text-nowrap">Validation Chats</li>
+				{:else}
+					<li class="divider"></li>
+				{/if}
+			{/if}
 			{#each validationChats as chat (chat.id)}
 				<li class="w-full">
 					<a
@@ -140,7 +146,15 @@
 					</a>
 				</li>
 			{/each}
-			<li class="menu-title">Discovery Chats</li>
+
+			{#if discoveryChats.length > 0}
+				{#if sidebarExpanded}
+					<li class="menu-title text-nowrap">Discovery Chats</li>
+				{:else}
+					<li class="divider"></li>
+				{/if}
+			{/if}
+
 			{#each discoveryChats as chat (chat.id)}
 				<li class="w-full">
 					<a
@@ -283,7 +297,7 @@
 
 		<!-- Main Content -->
 		<main class="flex-1 overflow-hidden">
-			<div class="mx-auto h-full max-w-7xl p-0 md:px-4 lg:px-6">
+			<div class="mx-auto h-full max-w-[1440px] p-0 md:px-4 lg:px-6">
 				{@render children()}
 			</div>
 		</main>

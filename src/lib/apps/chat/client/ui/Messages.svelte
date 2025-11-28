@@ -8,6 +8,7 @@
 
 	import Message from './Message.svelte';
 	import { onMount } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
 
 	interface Props {
 		messages: MessagesResponse[];
@@ -21,10 +22,18 @@
 	let messagesContainer: HTMLElement | null = $state(null);
 	let showScrollButton = $state(false);
 
+	let loading = $state(false);
+	afterNavigate(() => {
+		loading = true;
+	});
+
 	let lastLength = 0;
 	$effect(() => {
 		if (lastLength === messages.length) return;
-		setTimeout(() => scrollToBottom(messagesContainer), 100);
+		setTimeout(() => {
+			scrollToBottom(messagesContainer);
+			loading = false;
+		}, 100);
 		lastLength = messages.length;
 	});
 
@@ -55,6 +64,10 @@
 				<div class="flex flex-1 flex-col items-center justify-center text-center opacity-50">
 					<div class="filter mb-4 text-6xl grayscale">💬</div>
 					<p class="text-lg font-medium">Start a conversation...</p>
+				</div>
+			{:else if loading}
+				<div class="flex flex-1 flex-col items-center justify-center text-center opacity-50">
+					<span class="loading loading-spinner loading-lg text-primary"></span>
 				</div>
 			{:else}
 				{#each messages as msg, index (msg.id)}

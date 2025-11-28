@@ -123,10 +123,7 @@
 			</div>
 		{:else if isValidation}
 			<div class={['card-actions justify-end', compact ? 'mt-1' : 'mt-2']}>
-				<span class="flex items-center gap-1 text-xs text-primary">
-					<span class="loading loading-spinner loading-xs"></span>
-					Researching...
-				</span>
+				<span class="flex items-center gap-1 text-xs text-primary"> Validation </span>
 			</div>
 		{/if}
 	</div>
