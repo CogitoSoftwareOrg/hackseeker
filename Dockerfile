@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20-alpine AS build
+FROM mcr.microsoft.com/playwright:v1.57.0-noble AS build
 
 WORKDIR /app
 
