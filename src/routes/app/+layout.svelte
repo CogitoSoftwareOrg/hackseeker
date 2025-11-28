@@ -183,7 +183,10 @@
 	{#if user}
 		<div class="mb-2 flex justify-center px-2">
 			<button
-				class={['btn justify-start btn-ghost', expanded ? 'btn-block' : 'btn-square']}
+				class={[
+					'btn btn-ghost',
+					expanded ? 'btn-block justify-start' : 'btn-square justify-center'
+				]}
 				onclick={() => uiStore.toggleFeedbackModal()}
 			>
 				<MessageSquare class={expanded ? 'size-5' : 'size-6'} />

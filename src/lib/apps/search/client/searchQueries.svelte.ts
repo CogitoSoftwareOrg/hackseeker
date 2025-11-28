@@ -22,7 +22,7 @@ class SearchQueriesStore {
 		return queries;
 	}
 
-	async subscribe(userId: string) {
+	async subscribe(painId: string) {
 		return pb.collection(Collections.SearchQueries).subscribe(
 			'*',
 			(e) => {
@@ -40,7 +40,7 @@ class SearchQueriesStore {
 						break;
 				}
 			},
-			{ filter: `pain.user = "${userId}"` }
+			{ filter: `pain = "${painId}"` }
 		);
 	}
 

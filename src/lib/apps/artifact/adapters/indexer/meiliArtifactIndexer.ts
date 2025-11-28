@@ -4,7 +4,13 @@ import { building } from '$app/environment';
 
 import { EMBEDDERS, voyage } from '$lib/shared/server';
 
-import { ArtifactsTypeOptions, Collections, nanoid, pb } from '$lib/shared';
+import {
+	ArtifactsImportanceOptions,
+	ArtifactsTypeOptions,
+	Collections,
+	nanoid,
+	pb
+} from '$lib/shared';
 
 import type { Artifact, ArtifactIndexer } from '../../core';
 
@@ -23,6 +29,7 @@ type ArtifactDoc = {
 	type: ArtifactsTypeOptions;
 	payload: string;
 	source: string;
+	importance: ArtifactsImportanceOptions;
 
 	createdAt: string;
 	tokens: number;
@@ -59,7 +66,8 @@ export class MeiliArtifactIndexer implements ArtifactIndexer {
 			'painId',
 			'searchQueryId',
 			'createdAt',
-			'source'
+			'source',
+			'importance'
 		]);
 	}
 
@@ -106,6 +114,7 @@ Artifact payload: ${JSON.stringify(artifact.data.payload)}
 
 			const id = `${artifact.data.type}-${artifact.data.pain}-${artifact.data.searchQuery}-${nanoid()}`;
 			const doc: ArtifactDoc = {
+				importance: artifact.data.importance,
 				id,
 				type: artifact.data.type,
 				painId: artifact.data.pain,

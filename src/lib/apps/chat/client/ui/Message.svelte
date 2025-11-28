@@ -77,7 +77,7 @@
 				{#if formattedTime}
 					<time
 						datetime={msg.created}
-						class="text-xs text-base-content/40 opacity-0 transition-opacity group-hover:opacity-100"
+						class="text-xs text-base-content/40 opacity-80 transition-opacity group-hover:opacity-100"
 					>
 						{formattedTime}
 					</time>

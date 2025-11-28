@@ -25,6 +25,9 @@
 	let loading = $state(false);
 	afterNavigate(() => {
 		loading = true;
+		setTimeout(() => {
+			loading = false;
+		}, 200);
 	});
 
 	let lastLength = 0;

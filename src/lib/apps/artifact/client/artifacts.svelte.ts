@@ -26,7 +26,7 @@ class ArtifactsStore {
 		return artifacts;
 	}
 
-	async subscribe(userId: string) {
+	async subscribe(painId: string) {
 		return pb.collection(Collections.Artifacts).subscribe(
 			'*',
 			(e) => {
@@ -44,7 +44,7 @@ class ArtifactsStore {
 						break;
 				}
 			},
-			{ filter: `pain.user = "${userId}"` }
+			{ filter: `pain = "${painId}"` }
 		);
 	}
 

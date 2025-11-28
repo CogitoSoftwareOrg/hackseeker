@@ -34,6 +34,7 @@ export class MemoryAppImpl implements MemoryApp {
 		// APPS
 		private readonly painApp: PainApp
 	) {
+		// @ts-expect-error zodFunction is not typed
 		this.searchTool = zodFunction({
 			name: 'search_memories',
 			description: 'Search the memories for relevant information',
@@ -41,6 +42,7 @@ export class MemoryAppImpl implements MemoryApp {
 				query: z.string().describe('The query to search for')
 			})
 		});
+		// @ts-expect-error zodFunction is not typed
 		this.putTool = zodFunction({
 			name: 'save_memories',
 			description: 'Save important new memories',

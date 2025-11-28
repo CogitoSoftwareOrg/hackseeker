@@ -1,4 +1,4 @@
-import { Collections, pb } from '$lib';
+import { ArtifactsImportanceOptions, Collections, pb } from '$lib';
 import type z from 'zod';
 
 import {
@@ -46,7 +46,8 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'quote',
 				metadata: dto.metadata,
-				payload: quote
+				payload: quote,
+				importance: ArtifactsImportanceOptions.mid
 			});
 			artifacts.push(Artifact.fromResponse(rec));
 		}
@@ -58,6 +59,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'insight',
 				payload: insight,
+				importance: ArtifactsImportanceOptions.mid,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));
@@ -70,6 +72,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'competitor',
 				payload: competitor,
+				importance: ArtifactsImportanceOptions.mid,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));
@@ -82,6 +85,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'hack',
 				payload: hack,
+				importance: ArtifactsImportanceOptions.mid,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));

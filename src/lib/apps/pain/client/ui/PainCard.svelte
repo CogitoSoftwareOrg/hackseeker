@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { PainsStatusOptions, type PainsResponse } from '$lib';
+	import { PainsStatusOptions, type ChatsResponse, type PainsResponse } from '$lib';
 	import { Modal, Button } from '$lib/shared/ui';
 	import { Tag, Search, Zap, Trash2 } from 'lucide-svelte';
 
@@ -7,11 +7,12 @@
 
 	interface Props {
 		pain: PainsResponse;
+		chat: ChatsResponse;
 		compact?: boolean;
 		class?: string;
 	}
 
-	let { pain, compact = false, class: className = '' }: Props = $props();
+	let { pain, chat, compact = false, class: className = '' }: Props = $props();
 
 	let confirmModalOpen = $state(false);
 	let deleteModalOpen = $state(false);
@@ -23,7 +24,7 @@
 	async function handleStartValidation() {
 		isLoading = true;
 		try {
-			await painApi.startValidation(pain.id);
+			await painApi.startValidation(chat.id, pain.id);
 			confirmModalOpen = false;
 		} catch (error) {
 			console.error('Failed to start validation:', error);

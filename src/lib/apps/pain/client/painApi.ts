@@ -1,12 +1,14 @@
 import { Collections, pb, type Update } from '$lib';
 
 class PainApi {
-	async startValidation(painId: string) {
+	async startValidation(chatId: string, painId: string) {
 		const response = await fetch(`/api/pains/${painId}`, {
 			method: 'PUT',
 			credentials: 'include'
 		});
-		return response.json();
+		if (!response.ok) throw new Error('Failed to start validation', { cause: response.statusText });
+
+		await pb.collection(Collections.Chats).update(chatId, { pain: painId });
 	}
 
 	async archive(id: string) {

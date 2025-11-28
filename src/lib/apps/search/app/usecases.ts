@@ -27,7 +27,7 @@ export class SearchAppImpl implements SearchApp {
 	async searchQueries(queries: SearchQueriesResponse[]): Promise<SearchResult[][]> {
 		const results = await Promise.all(
 			queries.map(async (q) => {
-				const res = await this.searchQueryStream(q.query);
+				const res = await this.searchQuery(q.id, q.query);
 				const web = res.web;
 				return (
 					web
@@ -51,11 +51,12 @@ export class SearchAppImpl implements SearchApp {
 		return results;
 	}
 
-	async searchQueryStream(query: string, limit?: number): Promise<SearchData> {
+	async searchQuery(id: string, query: string, limit?: number): Promise<SearchData> {
 		const res = await firecrawl.search(query, {
 			limit: limit ?? SEARCH_LIMIT,
 			scrapeOptions: { formats: ['markdown'] }
 		});
+		await pb.collection(Collections.SearchQueries).update(id, { offset: limit ?? SEARCH_LIMIT });
 
 		return res;
 	}

@@ -23,6 +23,7 @@ export class PainAppImpl implements PainApp {
 		private readonly searchApp: SearchApp,
 		private readonly artifactApp: ArtifactApp
 	) {
+		// @ts-expect-error zodFunction is not typed
 		this.createTool = zodFunction({
 			name: 'create_pain',
 			description: 'Create a new pain draft',
@@ -35,6 +36,7 @@ export class PainAppImpl implements PainApp {
 				keywords: z.array(z.string()).describe('The keywords to search for the pain')
 			})
 		});
+		// @ts-expect-error zodFunction is not typed
 		this.updateTool = zodFunction({
 			name: 'update_pain',
 			description: 'Update a pain draft',
@@ -61,22 +63,22 @@ export class PainAppImpl implements PainApp {
 			.collection(Collections.Pains)
 			.update(painId, { status: PainsStatusOptions.validation });
 		const pain = Pain.fromResponse(painRec);
-		const userId = painRec.user;
+		// const userId = painRec.user;
 
 		const queries = await this.searchApp.generateQueries(painId, pain.prompt);
-		const results = await this.searchApp.searchQueries(queries);
-
-		await Promise.all(
-			results.map(async (result) => {
-				if (result.length === 0) return [];
-				return this.artifactApp.extract({
-					userId,
-					painId,
-					searchQueryId: result[0].id,
-					dtos: result
-				});
-			})
-		);
+		console.log('queries', queries);
+		// const results = await this.searchApp.searchQueries(queries);
+		// await Promise.all(
+		// 	results.map(async (result) => {
+		// 		if (result.length === 0) return [];
+		// 		return this.artifactApp.extract({
+		// 			userId,
+		// 			painId,
+		// 			searchQueryId: result[0].id,
+		// 			dtos: result
+		// 		});
+		// 	})
+		// );
 
 		return pain;
 	}
