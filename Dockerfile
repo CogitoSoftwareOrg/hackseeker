@@ -15,7 +15,7 @@ COPY . .
 
 RUN pnpm build
 
-FROM node:20-alpine AS runner
+FROM mcr.microsoft.com/playwright:v1.57.0-noble AS runner
 
 WORKDIR /app
 
