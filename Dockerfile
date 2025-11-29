@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM mcr.microsoft.com/playwright:v1.57.0-noble AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY . .
 
 RUN pnpm build
 
-FROM mcr.microsoft.com/playwright:v1.57.0-noble AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
