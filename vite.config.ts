@@ -83,5 +83,8 @@ export default defineConfig({
 				}
 			}
 		]
+	},
+	ssr: {
+		external: ['playwright', 'playwright-core']
 	}
 });
