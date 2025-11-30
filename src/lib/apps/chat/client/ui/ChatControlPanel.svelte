@@ -126,54 +126,56 @@
 				</div>
 			</div>
 
-			<div>
-				{#if !pain?.report}
-					<Button
-						disabled={pdfGenerating}
-						size="sm"
-						variant="ghost"
-						onclick={() => (pdfModalOpen = true)}
-					>
-						<File size={16} />
-						Gen PDF
-					</Button>
-				{:else}
-					<Button
-						target="_blank"
-						href={pb.files.getURL(pain, pain.report)}
-						disabled={pdfGenerating}
-						size="sm"
-						variant="ghost"
-						onclick={() => (pdfModalOpen = true)}
-					>
-						<File size={16} />
-						View PDF
-					</Button>
-				{/if}
+			{#if mode === 'validation'}
+				<div>
+					{#if !pain?.report}
+						<Button
+							disabled={pdfGenerating}
+							size="sm"
+							variant="ghost"
+							onclick={() => (pdfModalOpen = true)}
+						>
+							<File size={16} />
+							Gen PDF
+						</Button>
+					{:else}
+						<Button
+							target="_blank"
+							href={pb.files.getURL(pain, pain.report)}
+							disabled={pdfGenerating}
+							size="sm"
+							variant="ghost"
+							onclick={() => (pdfModalOpen = true)}
+						>
+							<File size={16} />
+							View PDF
+						</Button>
+					{/if}
 
-				{#if !pain?.landing}
-					<Button
-						disabled={landingGenerating}
-						size="sm"
-						variant="ghost"
-						onclick={() => (landingModalOpen = true)}
-					>
-						<Landmark size={16} />
-						Gen Landing
-					</Button>
-				{:else}
-					<Button
-						target="_blank"
-						href={`/pages/${pain.id}`}
-						disabled={landingGenerating}
-						size="sm"
-						variant="ghost"
-					>
-						<Landmark size={16} />
-						View Landing
-					</Button>
-				{/if}
-			</div>
+					{#if !pain?.landing}
+						<Button
+							disabled={landingGenerating}
+							size="sm"
+							variant="ghost"
+							onclick={() => (landingModalOpen = true)}
+						>
+							<Landmark size={16} />
+							Gen Landing
+						</Button>
+					{:else}
+						<Button
+							target="_blank"
+							href={`/pages/${pain.id}`}
+							disabled={landingGenerating}
+							size="sm"
+							variant="ghost"
+						>
+							<Landmark size={16} />
+							View Landing
+						</Button>
+					{/if}
+				</div>
+			{/if}
 		</header>
 
 		<!-- Content -->

@@ -1,4 +1,7 @@
 import { encoding_for_model } from 'tiktoken';
+import { zodFunction } from 'openai/helpers/zod.js';
+
+import type { OpenAIMessage } from '$lib/apps/chat/core';
 
 export const LLMS = {
 	// OpenAI
@@ -21,3 +24,28 @@ export const TOKENIZERS = {
 export const EMBEDDERS = {
 	VOYAGE_LITE: 'voyage-3.5-lite'
 };
+
+export type ToolCall = {
+	id: string;
+	name: string;
+	args: Record<string, unknown>;
+};
+
+export type Tool = {
+	schema: ReturnType<typeof zodFunction>;
+	callback: (args: Record<string, unknown>) => Promise<unknown>;
+};
+
+export type AgentRunCmd = {
+	tools: Tool[];
+	history: OpenAIMessage[];
+	knowledge: string;
+	dynamicArgs: Record<string, unknown>;
+};
+
+export interface Agent {
+	tools: Tool[];
+
+	run(cmd: AgentRunCmd): Promise<string>;
+	runStream(cmd: AgentRunCmd): Promise<ReadableStream>;
+}

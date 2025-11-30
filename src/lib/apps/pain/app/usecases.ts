@@ -5,11 +5,12 @@ import {
 	type MessagesResponse,
 	type PainsResponse
 } from '$lib/shared';
-import type { Tool } from '$lib/apps/llmTools/core';
+import type { Tool } from '$lib/shared/server';
 import type { SearchApp } from '$lib/apps/search/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 import type { ChatApp, OpenAIMessage } from '$lib/apps/chat/core';
 import type { MemoryApp } from '$lib/apps/memory/core';
+import type { Agent } from '$lib/shared/server';
 
 import {
 	Pain,
@@ -24,7 +25,6 @@ import {
 	UpdatePainToolSchema,
 	type GenPainPdfCmd,
 	type GenPainLandingCmd,
-	type Agent,
 	type Renderer
 } from '../core';
 
@@ -44,12 +44,13 @@ export class PainAppImpl implements PainApp {
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const { history } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
+		const { history, knowledge } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 
 		const agent = this.agents['pdf'];
 		const pdfContent = await agent.run({
 			tools: [],
 			history,
+			knowledge,
 			dynamicArgs: {}
 		});
 		const pdf = await this.renderer.render(pdfContent);
@@ -60,12 +61,13 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
-		const { history } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
+		const { history, knowledge } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 		const agent = this.agents['landing'];
 
 		const landing = await agent.run({
 			tools: [],
 			history,
+			knowledge,
 			dynamicArgs: {}
 		});
 
@@ -75,7 +77,12 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async ask(cmd: PainAskCmd): Promise<string> {
-		const { history, aiMsg } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
+		const { history, knowledge, aiMsg } = await this.prepare(
+			cmd.mode,
+			cmd.chatId,
+			cmd.userId,
+			cmd.query
+		);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -93,6 +100,7 @@ export class PainAppImpl implements PainApp {
 		const result = await agent.run({
 			tools,
 			history,
+			knowledge,
 			dynamicArgs: {
 				userId: cmd.userId,
 				chatId: cmd.chatId
@@ -106,7 +114,12 @@ export class PainAppImpl implements PainApp {
 
 	async askStream(cmd: PainAskCmd): Promise<ReadableStream> {
 		console.log('pain.askStream');
-		const { history, aiMsg } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
+		const { history, knowledge, aiMsg } = await this.prepare(
+			cmd.mode,
+			cmd.chatId,
+			cmd.userId,
+			cmd.query
+		);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -130,6 +143,7 @@ export class PainAppImpl implements PainApp {
 					const stream = await agent.runStream({
 						tools,
 						history: history,
+						knowledge,
 						dynamicArgs: {
 							userId: cmd.userId,
 							chatId: cmd.chatId
@@ -206,20 +220,24 @@ export class PainAppImpl implements PainApp {
 		chatId: string,
 		userId: string,
 		query: string
-	): Promise<{ history: OpenAIMessage[]; aiMsg: MessagesResponse; userMsg: MessagesResponse }> {
+	): Promise<{
+		history: OpenAIMessage[];
+		aiMsg: MessagesResponse;
+		userMsg: MessagesResponse;
+		knowledge: string;
+	}> {
 		const { aiMsg, userMsg } = await this.chatApp.prepareMessages(chatId, query);
+
+		// Chat History
+		const history = await this.chatApp.getHistory(chatId, HISTORY_TOKENS);
 
 		// Static Pain Knowledge
 		const status = mode === 'validation' ? PainsStatusOptions.validation : undefined;
-		const history: OpenAIMessage[] = (await this.getByChatId(chatId, status)).map((pain) => {
-			return {
-				role: 'user',
-				content: pain.prompt
-			};
-		});
-
-		// Chat History
-		history.push(...(await this.chatApp.getHistory(chatId, HISTORY_TOKENS)));
+		let knowledge = (await this.getByChatId(chatId, status))
+			.map((pain) => {
+				return `- ${pain.prompt}`;
+			})
+			.join('\n');
 
 		const memo = await this.memoryApp.get({
 			profileId: userId,
@@ -229,23 +247,15 @@ export class PainAppImpl implements PainApp {
 		});
 
 		if (memo.profile.length > 0) {
-			history.push({ role: 'system', content: 'Memories about the user:' });
-			history.push(
-				...memo.profile.map((p) => {
-					return { role: 'user', content: p.content } as OpenAIMessage;
-				})
-			);
+			knowledge += '\n\nMemories about the user:';
+			knowledge += memo.profile.map((p) => `- ${p.content}`).join('\n');
 		}
 
 		if (memo.event.length > 0) {
-			history.push({ role: 'system', content: 'Event memories:' });
-			history.push(
-				...memo.event.map((p) => {
-					return { role: 'user', content: p.content } as OpenAIMessage;
-				})
-			);
+			knowledge += '\n\nEvent memories:';
+			knowledge += memo.event.map((p) => `- ${p.content}`).join('\n');
 		}
 
-		return { history, aiMsg, userMsg };
+		return { history, aiMsg, userMsg, knowledge };
 	}
 }

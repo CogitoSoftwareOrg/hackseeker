@@ -2,9 +2,8 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 import { grok, LLMS } from '$lib/shared/server';
 
-import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
+import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 
-import { type Agent, type AgentRunCmd } from '../../core';
 import { DISCOVERY_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
