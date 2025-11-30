@@ -1,7 +1,13 @@
-// import { chromium } from 'playwright';
-// import fs from 'fs';
+import { Chromiumly } from 'chromiumly';
+import { env } from '$env/dynamic/private';
 
 import type { Renderer } from '../../core';
+
+Chromiumly.configure({
+	endpoint: env.GOTENBERG_URL,
+	username: env.GOTENBERG_USER,
+	password: env.GOTENBERG_PASSWORD
+});
 
 export class PdfRenderer implements Renderer {
 	async render(content: string): Promise<Blob> {

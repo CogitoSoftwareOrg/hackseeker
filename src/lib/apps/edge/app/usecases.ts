@@ -86,6 +86,7 @@ export class EdgeAppImpl implements EdgeApp {
 	}
 
 	async streamChat(cmd: StreamChatCmd): Promise<ReadableStream> {
+		console.log('edge.streamChat');
 		const { principal, chatId, query } = cmd;
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining <= 0) throw new Error('Insufficient balance');
@@ -96,6 +97,12 @@ export class EdgeAppImpl implements EdgeApp {
 
 		return new ReadableStream({
 			async start(controller) {
+				const encoder = new TextEncoder();
+				const sendEvent = (event: string, data: string) => {
+					controller.enqueue(encoder.encode(`event: ${event}\n`));
+					controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+				};
+
 				try {
 					const stream = await painApp.askStream({
 						mode: cmd.mode,
@@ -107,9 +114,14 @@ export class EdgeAppImpl implements EdgeApp {
 					while (true) {
 						const { value, done } = await reader.read();
 						if (done) break;
-						controller.enqueue(value);
+						sendEvent('chunk', value);
 					}
+					sendEvent('done', '');
 					controller.close();
+				} catch (error) {
+					console.error(error);
+					sendEvent('error', JSON.stringify(error));
+					controller.error(error);
 				} finally {
 					if (!charged) {
 						await userApp.charge({ subId: principal.sub.id, amount: DEFAULT_CHARGE_AMOUNT });

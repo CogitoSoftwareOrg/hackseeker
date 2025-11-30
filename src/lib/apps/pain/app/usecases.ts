@@ -9,7 +9,7 @@ import type { Tool } from '$lib/apps/llmTools/core';
 import type { SearchApp } from '$lib/apps/search/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 import type { ChatApp, OpenAIMessage } from '$lib/apps/chat/core';
-import type { MemoryApp, MemoryGetResult, StaticMemory } from '$lib/apps/memory/core';
+import type { MemoryApp } from '$lib/apps/memory/core';
 
 import {
 	Pain,
@@ -44,7 +44,7 @@ export class PainAppImpl implements PainApp {
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
+		const { history } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 
 		const agent = this.agents['pdf'];
 		const pdfContent = await agent.run({
@@ -60,7 +60,7 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
-		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
+		const { history } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
 		const agent = this.agents['landing'];
 
 		const landing = await agent.run({
@@ -75,7 +75,7 @@ export class PainAppImpl implements PainApp {
 	}
 
 	async ask(cmd: PainAskCmd): Promise<string> {
-		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
+		const { history, aiMsg } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -99,11 +99,14 @@ export class PainAppImpl implements PainApp {
 			}
 		});
 
+		await this.chatApp.postProcessMessage(aiMsg.id, result);
+
 		return result;
 	}
 
 	async askStream(cmd: PainAskCmd): Promise<ReadableStream> {
-		const history = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
+		console.log('pain.askStream');
+		const { history, aiMsg } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, cmd.query);
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -118,12 +121,33 @@ export class PainAppImpl implements PainApp {
 			pains.push(...(await this.getByChatId(cmd.chatId, PainsStatusOptions.validation)));
 		}
 
-		return agent.runStream({
-			tools,
-			history: history,
-			dynamicArgs: {
-				userId: cmd.userId,
-				chatId: cmd.chatId
+		const chatApp = this.chatApp;
+
+		return new ReadableStream({
+			async start(controller) {
+				try {
+					let content = '';
+					const stream = await agent.runStream({
+						tools,
+						history: history,
+						dynamicArgs: {
+							userId: cmd.userId,
+							chatId: cmd.chatId
+						}
+					});
+					const reader = stream.getReader();
+					while (true) {
+						const { value, done } = await reader.read();
+						if (done) break;
+						content += value;
+						controller.enqueue(JSON.stringify({ text: value, msgId: aiMsg.id }));
+					}
+					await chatApp.postProcessMessage(aiMsg.id, content);
+				} catch (error) {
+					controller.error(error);
+				} finally {
+					controller.close();
+				}
 			}
 		});
 	}
@@ -182,11 +206,12 @@ export class PainAppImpl implements PainApp {
 		chatId: string,
 		userId: string,
 		query: string
-	): Promise<OpenAIMessage[]> {
-		await this.chatApp.prepareMessages(chatId, query);
+	): Promise<{ history: OpenAIMessage[]; aiMsg: MessagesResponse; userMsg: MessagesResponse }> {
+		const { aiMsg, userMsg } = await this.chatApp.prepareMessages(chatId, query);
 
 		// Static Pain Knowledge
-		const history: OpenAIMessage[] = (await this.getByChatId(chatId)).map((pain) => {
+		const status = mode === 'validation' ? PainsStatusOptions.validation : undefined;
+		const history: OpenAIMessage[] = (await this.getByChatId(chatId, status)).map((pain) => {
 			return {
 				role: 'user',
 				content: pain.prompt
@@ -221,6 +246,6 @@ export class PainAppImpl implements PainApp {
 			);
 		}
 
-		return history;
+		return { history, aiMsg, userMsg };
 	}
 }

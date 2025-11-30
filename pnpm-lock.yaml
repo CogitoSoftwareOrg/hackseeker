@@ -26,6 +26,9 @@ importers:
       chromium-bidi:
         specifier: ^11.0.1
         version: 11.0.1(devtools-protocol@0.0.1551306)
+      chromiumly:
+        specifier: ^4.2.0
+        version: 4.2.0
       dompurify:
         specifier: ^3.3.0
         version: 3.3.0
@@ -1805,6 +1808,10 @@ packages:
     peerDependencies:
       devtools-protocol: '*'
 
+  chromiumly@4.2.0:
+    resolution: {integrity: sha512-fqCjZhOuePO3/nrNKkjxnjXhYD0RZaWlQZLFgNMUTLjJw0V+qf+v29n/2UZAwU4K37bcFKfIKLpKl/tD0ZNtIg==}
+    engines: {node: '>=18.x'}
+
   cjs-module-lexer@1.4.3:
     resolution: {integrity: sha512-9z8TZaGM1pfswYeXrUpzPrkx8UnWYdhJclsiYMm6x/w5+nN+8Tf/LnAgfLGQCm59qAOxU8WwHEq2vNwF6i4j+Q==}
 
@@ -1839,6 +1846,10 @@ packages:
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+
+  config@4.1.1:
+    resolution: {integrity: sha512-jljfwqNZ7QHwAW9Z9NDZdJARFiu5pjLqQO0K4ooY22iY/bIY78n0afI4ANEawfgQOxri0K/3oTayX8XIauWcLA==}
+    engines: {node: '>= 20.0.0'}
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -1921,6 +1932,10 @@ packages:
 
   dompurify@3.3.0:
     resolution: {integrity: sha512-r+f6MYR1gGN1eJv0TVQbhA7if/U7P87cdPl3HN5rikqaBSBxLiCb/b9O+2eG0cxz0ghyU+mU1QkbsOwERMYlWQ==}
+
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -5412,6 +5427,11 @@ snapshots:
       mitt: 3.0.1
       zod: 3.25.76
 
+  chromiumly@4.2.0:
+    optionalDependencies:
+      config: 4.1.1
+      dotenv: 17.2.3
+
   cjs-module-lexer@1.4.3: {}
 
   cliui@8.0.1:
@@ -5439,6 +5459,11 @@ snapshots:
   commondir@1.0.1: {}
 
   concat-map@0.0.1: {}
+
+  config@4.1.1:
+    dependencies:
+      json5: 2.2.3
+    optional: true
 
   convert-source-map@2.0.0: {}
 
@@ -5511,6 +5536,9 @@ snapshots:
   dompurify@3.3.0:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
+
+  dotenv@17.2.3:
+    optional: true
 
   dunder-proto@1.0.1:
     dependencies:

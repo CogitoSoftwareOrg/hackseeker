@@ -38,11 +38,11 @@ export const getDI = () => {
 	const artifactApp = getArtifactApp(searchApp);
 
 	const userApp = getUserApp();
-	const painApp = getPainApp(searchApp, artifactApp, memoryApp);
+	const chatApp = getChatApp();
 
-	const chatApp = getChatApp(memoryApp, painApp);
+	const painApp = getPainApp(searchApp, artifactApp, memoryApp, chatApp);
 
-	const edgeApp = getEdgeApp(userApp, chatApp, painApp, artifactApp);
+	const edgeApp = getEdgeApp(userApp, painApp, artifactApp);
 	const jobApp = getJobApp();
 
 	di = {

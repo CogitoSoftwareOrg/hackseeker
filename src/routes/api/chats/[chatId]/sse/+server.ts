@@ -14,11 +14,6 @@ const handler: RequestHandler = async ({ params, url, locals }) => {
 
 	const edge = locals.di.edge;
 
-	const sendEvent = (event: string, data: string) => {
-		controller.enqueue(encoder.encode(`event: ${event}\n`));
-		controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-	};
-
 	const stream = await edge.streamChat({
 		mode,
 		principal: locals.principal,
