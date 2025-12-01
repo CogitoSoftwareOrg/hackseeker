@@ -1,0 +1,1 @@
+export { MeiliUserIndexer } from './meiliUserIndexer';

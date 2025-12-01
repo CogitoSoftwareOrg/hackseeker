@@ -9,6 +9,13 @@ export type ArtifactExtractCmd = {
 	dtos: SearchResult[];
 };
 
+export type ArtifactGetMemoriesCmd = {
+	userId: string;
+	painId: string;
+	query: string;
+	tokens: number;
+};
+
 export type ArtifactSearchCmd = {
 	userId: string;
 	painId: string;
@@ -16,6 +23,8 @@ export type ArtifactSearchCmd = {
 };
 
 export interface ArtifactApp {
+	getMemories(cmd: ArtifactGetMemoriesCmd): Promise<Artifact[]>;
+
 	search(cmd: ArtifactSearchCmd): Promise<Artifact[]>;
 
 	extract(cmd: ArtifactExtractCmd): Promise<Artifact[]>;

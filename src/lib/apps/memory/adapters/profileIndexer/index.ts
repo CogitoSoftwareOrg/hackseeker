@@ -1,1 +1,0 @@
-export { MeiliProfileIndexer } from './meiliProfileIndexer';

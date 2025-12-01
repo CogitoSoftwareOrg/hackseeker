@@ -1,7 +1,7 @@
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 import type { SearchApp } from '$lib/apps/search/core';
-import type { MemoryApp } from '$lib/apps/memory/core';
 import type { ChatApp } from '$lib/apps/chat/core';
+import type { UserApp } from '$lib/apps/user/core';
 
 import { DiscoveryAgent, ValidationAgent, PdfRenderer, PdfAgent, LandingAgent } from './adapters';
 import { PainAppImpl } from './app';
@@ -10,13 +10,13 @@ import type { PainApp } from './core';
 export const getPainApp = (
 	searchApp: SearchApp,
 	artifactApp: ArtifactApp,
-	memoryApp: MemoryApp,
-	chatApp: ChatApp
+	chatApp: ChatApp,
+	userApp: UserApp
 ): PainApp => {
-	const discoveryAgent = new DiscoveryAgent([memoryApp.searchTool, memoryApp.putTool]);
-	const validationAgent = new ValidationAgent([memoryApp.searchTool, memoryApp.putTool]);
-	const pdfAgent = new PdfAgent([memoryApp.searchTool, memoryApp.putTool]);
-	const landingAgent = new LandingAgent([memoryApp.searchTool, memoryApp.putTool]);
+	const discoveryAgent = new DiscoveryAgent([]);
+	const validationAgent = new ValidationAgent([]);
+	const pdfAgent = new PdfAgent([]);
+	const landingAgent = new LandingAgent([]);
 
 	const pdfRenderer = new PdfRenderer();
 
@@ -31,7 +31,7 @@ export const getPainApp = (
 		searchApp,
 		chatApp,
 		artifactApp,
-		memoryApp
+		userApp
 	);
 	return painApp;
 };

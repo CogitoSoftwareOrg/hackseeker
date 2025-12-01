@@ -1,11 +1,11 @@
+import { EMBEDDERS, voyage } from '$lib/shared/server';
+import { building } from '$app/environment';
 import { type Index, MeiliSearch, type UserProvidedEmbedder } from 'meilisearch';
 import { env } from '$env/dynamic/private';
 
 import { nanoid } from '$lib/shared';
 
-import type { EventMemory, EventIndexer, EventType, Importance } from '../../core';
-import { EMBEDDERS, voyage } from '$lib/shared/server';
-import { building } from '$app/environment';
+import type { ChatEventMemory, ChatEventIndexer, EventType, Importance } from '../../core';
 
 const BATCH_SIZE = 128;
 const OUTPUT_DIMENSION = 1024;
@@ -13,7 +13,7 @@ const VOYAGE_EMBEDDER = 'voyage';
 const SEARCH_RATIO = 0.75;
 const CHUNK_TOKEN_LIMIT = 256;
 
-type EventDoc = {
+type ChatEventDoc = {
 	id: string;
 	type: EventType;
 	content: string;
@@ -31,9 +31,9 @@ export const EVENT_EMBEDDERS = {
 	} as UserProvidedEmbedder
 };
 
-export class MeiliEventIndexer implements EventIndexer {
+export class MeiliChatEventIndexer implements ChatEventIndexer {
 	private readonly client?: MeiliSearch;
-	private readonly index?: Index<EventDoc>;
+	private readonly index?: Index<ChatEventDoc>;
 
 	constructor() {
 		if (building) return;
@@ -42,7 +42,7 @@ export class MeiliEventIndexer implements EventIndexer {
 			host: env.MEILI_URL,
 			apiKey: env.MEILI_MASTER_KEY
 		});
-		this.index = this.client.index('events');
+		this.index = this.client.index('chatEvents');
 	}
 
 	async migrate(): Promise<void> {
@@ -51,24 +51,24 @@ export class MeiliEventIndexer implements EventIndexer {
 		await this.index.updateFilterableAttributes(['type', 'chatId', 'createdAt', 'importance']);
 	}
 
-	async add(memories: EventMemory[]): Promise<void> {
+	async add(memories: ChatEventMemory[]): Promise<void> {
 		if (!this.index) return;
 		if (memories.length === 0) {
-			console.log('No event memories to index');
+			console.log('No chat event memories to index');
 			return;
 		}
 
-		const docs: EventDoc[] = [];
+		const docs: ChatEventDoc[] = [];
 		const validMemories = memories.filter((memory) => {
 			if (memory.tokens > CHUNK_TOKEN_LIMIT) {
-				console.warn('Event memory tokens are too high', memory);
+				console.warn('Chat event memory tokens are too high', memory);
 				return false;
 			}
 			return true;
 		});
 
 		if (validMemories.length === 0) {
-			console.warn('No valid event memories after filtering');
+			console.warn('No valid chat event memories after filtering');
 			return;
 		}
 
@@ -99,7 +99,7 @@ export class MeiliEventIndexer implements EventIndexer {
 			}
 
 			const id = `${memory.type}-${memory.chatId}-${nanoid()}`;
-			const doc: EventDoc = {
+			const doc: ChatEventDoc = {
 				id,
 				type: memory.type,
 				chatId: memory.chatId,
@@ -134,7 +134,7 @@ export class MeiliEventIndexer implements EventIndexer {
 		chatId: string,
 		days?: number,
 		type?: EventType
-	): Promise<EventMemory[]> {
+	): Promise<ChatEventMemory[]> {
 		const limit = Math.floor(tokens / CHUNK_TOKEN_LIMIT);
 
 		let f = `chatId = "${chatId}"`;
@@ -167,7 +167,7 @@ export class MeiliEventIndexer implements EventIndexer {
 			}
 		});
 
-		const memories: EventMemory[] = res.hits.map((hit) => ({
+		const memories: ChatEventMemory[] = res.hits.map((hit) => ({
 			kind: 'event',
 			type: hit.type,
 			chatId: hit.chatId,

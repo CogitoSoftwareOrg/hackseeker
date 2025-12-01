@@ -1,1 +1,0 @@
-export { MemoryAppImpl } from './usecases';

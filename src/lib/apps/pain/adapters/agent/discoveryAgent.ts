@@ -39,13 +39,13 @@ You will receive:
     You do NOT have access to hidden information beyond the provided CONTEXT and your general training.
     Explicitly say what is unknown or ambiguous.
 - TOOLS:
-    create_pain: Create new draft (segment, problem, jtbd, keywords)
-    update_pain: Edit existing draft by id
+    createPain: Create new draft (segment, problem, jtbd, keywords)
+    updatePain: Edit existing draft by id
 
 
 [TOOLS INSTRUCTIONS]
-- Draft a lot of pains with create_pain, user will select the best ones.
-- If user wants to edit a pain, use update_pain.
+- Draft a lot of pains with createPain, user will select the best ones.
+- If user wants to edit a pain, use updatePain.
 
 [KNOWLEDGE]
 {KNOWLEDGE}

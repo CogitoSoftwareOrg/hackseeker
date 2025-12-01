@@ -9,10 +9,33 @@ import {
 } from '$lib/shared';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
 
-import { Chat, type ChatApp, type OpenAIMessage } from '../core';
+import {
+	Chat,
+	type ChatApp,
+	type ChatEventIndexer,
+	type ChatEventMemoryPutCmd,
+	type ChatEventMemory,
+	type ChatEventMemoryGetCmd,
+	type OpenAIMessage
+} from '../core';
 
 export class ChatAppImpl implements ChatApp {
-	constructor() {}
+	constructor(private readonly chatEventIndexer: ChatEventIndexer) {}
+
+	async getMemories(cmd: ChatEventMemoryGetCmd): Promise<ChatEventMemory[]> {
+		return this.chatEventIndexer.search(cmd.query, cmd.tokens, cmd.chatId);
+	}
+
+	async putMemories(cmd: ChatEventMemoryPutCmd): Promise<void> {
+		const memories: ChatEventMemory[] = cmd.dtos.map((dto) => ({
+			type: dto.type,
+			chatId: dto.chatId,
+			content: dto.content,
+			importance: dto.importance,
+			tokens: TOKENIZERS[LLMS.GROK_4_FAST].encode(dto.content).length
+		}));
+		await this.chatEventIndexer.add(memories);
+	}
 	async prepareMessages(chatId: string, query: string) {
 		const chat = await this.getChat(chatId);
 

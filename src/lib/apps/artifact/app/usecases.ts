@@ -8,6 +8,7 @@ import {
 	ExtractorResultSchema,
 	type ArtifactApp,
 	type ArtifactExtractCmd,
+	type ArtifactGetMemoriesCmd,
 	type ArtifactIndexer,
 	type ArtifactSearchCmd,
 	type Extractor
@@ -22,6 +23,16 @@ export class ArtifactAppImpl implements ArtifactApp {
 		// APPS
 		private readonly searchApp: SearchApp
 	) {}
+
+	async getMemories(cmd: ArtifactGetMemoriesCmd): Promise<Artifact[]> {
+		const artifacts = await this.artifactIndexer.search(
+			cmd.userId,
+			cmd.query,
+			cmd.tokens,
+			cmd.painId
+		);
+		return artifacts;
+	}
 
 	async search(cmd: ArtifactSearchCmd): Promise<Artifact[]> {
 		const results = await this.searchApp.searchQueries(cmd.queryIds);

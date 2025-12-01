@@ -36,11 +36,11 @@ You will receive:
     You do NOT have access to hidden information beyond the provided CONTEXT and your general training.
     Explicitly say what is unknown or ambiguous.
 - TOOLS:
-    update_pain: Edit existing draft by id
+    updatePain: Edit existing draft by id
 
 
 [TOOLS INSTRUCTIONS]
-- If user wants to edit a pain, use update_pain.
+- If user wants to edit a pain, use updatePain.
 
 [KNOWLEDGE]
 {KNOWLEDGE}

@@ -1,6 +1,19 @@
 import type { RecordAuthResponse } from 'pocketbase';
 import type { UsersResponse, SubsResponse, UserExpand } from '$lib';
 
+export enum Importance {
+	Low = 'low',
+	Medium = 'medium',
+	High = 'high'
+}
+
+export type UserMemory = {
+	userId: string;
+	content: string;
+	tokens: number;
+	importance: Importance;
+};
+
 export class Principal {
 	constructor(
 		public user: UsersResponse,

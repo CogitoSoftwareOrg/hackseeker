@@ -4,7 +4,7 @@ import { env } from '$env/dynamic/private';
 import { nanoid } from '$lib/shared';
 import { EMBEDDERS, voyage } from '$lib/shared/server';
 
-import type { ProfileMemory, ProfileIndexer, ProfileType, Importance } from '../../core';
+import type { UserMemory, UserIndexer, Importance } from '../../core';
 import { building } from '$app/environment';
 
 const BATCH_SIZE = 128;
@@ -14,28 +14,26 @@ const OUTPUT_DIMENSION = 1024;
 const SEARCH_RATIO = 0.75;
 const CHUNK_TOKEN_LIMIT = 256;
 
-export type ProfileDoc = {
+export type UserDoc = {
 	id: string;
-	type: ProfileType;
-	profileIds: string[];
+	userId: string;
 	content: string;
-	createdAt: string;
 	tokens: number;
+	createdAt: string;
 	importance: Importance;
-	profilesCount: number;
 	_vectors: Record<string, number[]>;
 };
 
-export const PROFILE_EMBEDDERS = {
+export const USER_EMBEDDERS = {
 	[VOYAGE_EMBEDDER]: {
 		source: 'userProvided',
 		dimensions: OUTPUT_DIMENSION
 	} as UserProvidedEmbedder
 };
 
-export class MeiliProfileIndexer implements ProfileIndexer {
+export class MeiliUserIndexer implements UserIndexer {
 	private readonly client?: MeiliSearch;
-	private readonly index?: Index<ProfileDoc>;
+	private readonly index?: Index<UserDoc>;
 
 	constructor() {
 		if (building) return;
@@ -48,39 +46,33 @@ export class MeiliProfileIndexer implements ProfileIndexer {
 
 	async migrate(): Promise<void> {
 		if (!this.index) return;
-		await this.index.updateEmbedders(PROFILE_EMBEDDERS);
-		await this.index.updateFilterableAttributes([
-			'type',
-			'profileIds',
-			'createdAt',
-			'importance',
-			'profilesCount'
-		]);
+		await this.index.updateEmbedders(USER_EMBEDDERS);
+		await this.index.updateFilterableAttributes(['userId', 'createdAt', 'importance']);
 	}
 
-	async add(memories: ProfileMemory[]): Promise<void> {
+	async add(memories: UserMemory[]): Promise<void> {
 		if (!this.index) return;
 		if (memories.length === 0) {
-			console.log('No profile memories to index');
+			console.log('No user memories to index');
 			return;
 		}
 
-		const docs: ProfileDoc[] = [];
+		const docs: UserDoc[] = [];
 
 		const validMemories = memories.filter((memory) => {
 			if (memory.tokens > CHUNK_TOKEN_LIMIT) {
-				console.warn('Profile memory tokens are too high', memory);
+				console.warn('User memory tokens are too high', memory);
 				return false;
 			}
-			if (!memory.profileId) {
-				console.warn('Profile ID is not valid', memory);
+			if (!memory.userId) {
+				console.warn('User ID is not valid', memory);
 				return false;
 			}
 			return true;
 		});
 
 		if (validMemories.length === 0) {
-			console.warn('No valid profile memories after filtering');
+			console.warn('No valid user memories after filtering');
 			return;
 		}
 
@@ -110,15 +102,13 @@ export class MeiliProfileIndexer implements ProfileIndexer {
 				continue;
 			}
 
-			const id = `${memory.type}-${memory.profileId}-${nanoid()}`;
-			const doc: ProfileDoc = {
+			const id = `${memory.userId}-${nanoid()}`;
+			const doc: UserDoc = {
 				id,
-				type: memory.type,
-				profileIds: [memory.profileId],
+				userId: memory.userId,
 				content: memory.content,
 				tokens: memory.tokens,
 				importance: memory.importance,
-				profilesCount: 1,
 				createdAt: new Date().toISOString(),
 				_vectors: {
 					[VOYAGE_EMBEDDER]: embedding
@@ -143,10 +133,10 @@ export class MeiliProfileIndexer implements ProfileIndexer {
 		}
 	}
 
-	async search(query: string, tokens: number, profileId: string): Promise<ProfileMemory[]> {
+	async search(query: string, tokens: number, userId: string): Promise<UserMemory[]> {
 		const limit = Math.floor(tokens / CHUNK_TOKEN_LIMIT);
 
-		const f = this.buildProfilesFilter([profileId]);
+		const f = this.buildUsersFilter([userId]);
 
 		const vector = (
 			await voyage.embed({
@@ -171,33 +161,29 @@ export class MeiliProfileIndexer implements ProfileIndexer {
 			}
 		});
 
-		const memories: ProfileMemory[] = res.hits.map((hit) => ({
-			kind: 'profile',
-			type: hit.type,
-			profileId: hit.profileIds[0],
+		const memories: UserMemory[] = res.hits.map((hit) => ({
+			userId: hit.userId,
 			content: hit.content,
-			createdAt: hit.createdAt,
 			tokens: hit.tokens,
-			importance: hit.importance
+			importance: hit.importance,
+			createdAt: hit.createdAt
 		}));
 		return memories;
 	}
 
-	private buildProfilesFilter(profileIds: string[]): string {
-		if (profileIds.length === 0) return '';
+	private buildUsersFilter(userIds: string[]): string {
+		if (userIds.length === 0) return '';
 
-		const personalFilter = `(profilesCount = 1 AND profileIds IN ["${profileIds.join('","')}"])`;
+		const personalFilter = `(userId = "${userIds[0]}")`;
 
 		const pairFilters: string[] = [];
 
-		for (let i = 0; i < profileIds.length; i++) {
-			for (let j = i + 1; j < profileIds.length; j++) {
-				const a = profileIds[i];
-				const b = profileIds[j];
+		for (let i = 0; i < userIds.length; i++) {
+			for (let j = i + 1; j < userIds.length; j++) {
+				const a = userIds[i];
+				const b = userIds[j];
 
-				pairFilters.push(
-					`(profilesCount = 2 AND profileIds IN ["${a}"] AND profileIds IN ["${b}"])`
-				);
+				pairFilters.push(`(userId = "${a}" AND userId = "${b}")`);
 			}
 		}
 

@@ -34,6 +34,26 @@ export type OpenAIMessage = {
 	tool_call_name?: string;
 	tool_call_args?: Record<string, unknown>;
 };
+
+export enum EventType {
+	Story = 'story',
+	Chat = 'chat',
+	Action = 'action',
+	Decision = 'decision'
+}
+export enum Importance {
+	Low = 'low',
+	Medium = 'medium',
+	High = 'high'
+}
+
+export type ChatEventMemory = {
+	type: EventType;
+	content: string;
+	chatId: string;
+	tokens: number;
+	importance: Importance;
+};
 export class Chat {
 	constructor(
 		public readonly data: ChatsResponse<ChatExpand>,
