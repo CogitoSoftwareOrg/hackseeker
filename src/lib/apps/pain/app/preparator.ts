@@ -3,7 +3,7 @@ import type { ArtifactApp } from '$lib/apps/artifact/core';
 import type { ChatApp, OpenAIMessage } from '$lib/apps/chat/core';
 import type { UserApp } from '$lib/apps/user/core';
 
-import { type WorkflowMode, type PainCrud } from '../core';
+import { type AskMode, type GenMode, type PainCrud } from '../core';
 
 const HISTORY_TOKENS = 2000;
 const USER_TOKENS = 5000;
@@ -23,7 +23,7 @@ export class PreparatorImpl {
 
 	// PRIVATE UTILS
 	async prepare(
-		mode: WorkflowMode,
+		mode: AskMode | GenMode,
 		chatId: string,
 		userId: string,
 		query: string
@@ -43,7 +43,7 @@ export class PreparatorImpl {
 	}
 
 	async buildKnowledge(
-		mode: WorkflowMode,
+		mode: AskMode | GenMode,
 		userId: string,
 		chatId: string,
 		query: string

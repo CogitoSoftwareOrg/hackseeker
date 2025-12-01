@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WorkflowMode } from '$lib/apps/pain/core';
+	import type { AskMode } from '$lib/apps/pain/core';
 
 	import {
 		Lightbulb,
@@ -44,7 +44,7 @@
 
 	const pain = $derived(chat.pain ? pains.find((p) => p.id === chat.pain) : null);
 
-	const mode: WorkflowMode = $derived(chat.pain ? 'validation' : 'discovery');
+	const mode: AskMode = $derived(chat.pain ? 'validation' : 'discovery');
 
 	let pdfModalOpen = $state(false);
 	let landingModalOpen = $state(false);

@@ -1,4 +1,4 @@
-import type { WorkflowMode } from '$lib/apps/pain/core';
+import type { AskMode } from '$lib/apps/pain/core';
 import type { Principal } from '$lib/apps/user/core';
 
 export interface StartPainValidationCmd {
@@ -23,7 +23,7 @@ export interface SearchArtifactsCmd {
 }
 
 export interface StreamChatCmd {
-	mode: WorkflowMode;
+	mode: AskMode;
 	principal: Principal;
 	chatId: string;
 	query: string;

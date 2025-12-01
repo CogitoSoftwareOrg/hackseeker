@@ -12,7 +12,7 @@
 
 	import Splash from './Splash.svelte';
 	import { painsStore } from '$lib/apps/pain/client';
-	import type { WorkflowMode } from '$lib/apps/llmTools/core/models.js';
+	import type { AskMode } from '$lib/apps/pain/core';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
@@ -24,7 +24,7 @@
 
 	const chats = $derived(chatsStore.chats);
 	const chatModes = $derived.by(() => {
-		const m = new SvelteMap<string, WorkflowMode>();
+		const m = new SvelteMap<string, AskMode>();
 		for (const chat of chats) {
 			const pains = painsStore.getByChatId(chat.id);
 			const validationPains = pains.filter((p) => p.status === PainsStatusOptions.validation);

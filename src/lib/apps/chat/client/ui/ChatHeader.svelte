@@ -2,7 +2,7 @@
 	import { Pencil, Check, X, Menu, Lightbulb, Search, PanelRight } from 'lucide-svelte';
 
 	import { chatsStore, chatApi } from '$lib/apps/chat/client';
-	import type { WorkflowMode } from '$lib/apps/pain/core';
+	import type { AskMode } from '$lib/apps/pain/core';
 	import { Button, uiStore } from '$lib/shared/ui';
 
 	interface Props {
@@ -14,7 +14,7 @@
 
 	const chat = $derived(chatsStore.chats.find((c) => c.id === chatId));
 
-	const mode: WorkflowMode = $derived(chat?.pain ? 'validation' : 'discovery');
+	const mode: AskMode = $derived(chat?.pain ? 'validation' : 'discovery');
 
 	let isEditingTitle = $state(false);
 	let editedTitle = $state('');

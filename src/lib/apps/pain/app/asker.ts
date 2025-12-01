@@ -7,7 +7,7 @@ import {
 	type PainAskCmd,
 	type PainAsker,
 	type PainCrud,
-	type WorkflowMode,
+	type AskMode,
 	CreatePainToolSchema,
 	UpdatePainToolSchema
 } from '../core';
@@ -21,7 +21,7 @@ export class PainAskerImpl implements PainAsker {
 		private readonly crud: PainCrud,
 
 		// ADAPTERS
-		private readonly agents: Record<WorkflowMode, Agent>,
+		private readonly agents: Record<AskMode, Agent>,
 
 		// APPS
 		private readonly chatApp: ChatApp

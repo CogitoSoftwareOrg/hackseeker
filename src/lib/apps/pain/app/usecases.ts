@@ -8,7 +8,8 @@ import {
 	Pain,
 	type PainApp,
 	type PainAskCmd,
-	type WorkflowMode,
+	type AskMode,
+	type GenMode,
 	type GenPainPdfCmd,
 	type GenPainLandingCmd,
 	type Renderer,
@@ -33,7 +34,7 @@ export class PainAppImpl implements PainApp {
 
 	constructor(
 		// Adapters
-		private readonly agents: Record<WorkflowMode, Agent>,
+		private readonly agents: Record<AskMode | GenMode, Agent>,
 		private readonly renderer: Renderer,
 		// Apps
 		private readonly searchApp: SearchApp,

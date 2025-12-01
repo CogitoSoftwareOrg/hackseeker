@@ -1,30 +1,19 @@
 import { Collections, pb } from '$lib';
 import type { Agent } from '$lib/shared/server';
 
-import type {
-	GenPainLandingCmd,
-	GenPainPdfCmd,
-	PainGenerator,
-	Renderer,
-	WorkflowMode
-} from '../core';
+import type { GenPainLandingCmd, GenPainPdfCmd, PainGenerator, Renderer, GenMode } from '../core';
 
 import type { PreparatorImpl } from './preparator';
 
 export class PainGeneratorImpl implements PainGenerator {
 	constructor(
 		private readonly preparator: PreparatorImpl,
-		private readonly agents: Record<WorkflowMode, Agent>,
+		private readonly agents: Record<GenMode, Agent>,
 		private readonly renderer: Renderer
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const { history, knowledge } = await this.preparator.prepare(
-			cmd.mode,
-			cmd.chatId,
-			cmd.userId,
-			''
-		);
+		const { history, knowledge } = await this.preparator.prepare('pdf', cmd.chatId, cmd.userId, '');
 
 		const agent = this.agents['pdf'];
 		const pdfContent = await agent.run({
@@ -42,7 +31,7 @@ export class PainGeneratorImpl implements PainGenerator {
 
 	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
 		const { history, knowledge } = await this.preparator.prepare(
-			cmd.mode,
+			'landing',
 			cmd.chatId,
 			cmd.userId,
 			''

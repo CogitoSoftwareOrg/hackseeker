@@ -1,11 +1,11 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 
 import { withTracing, streamWithFlush } from '$lib/shared/server';
-import type { WorkflowMode } from '$lib/apps/pain/core';
+import type { AskMode } from '$lib/apps/pain/core';
 
 const handler: RequestHandler = async ({ params, url, locals }) => {
 	const { chatId } = params;
-	const mode = (url.searchParams.get('mode') as WorkflowMode) ?? 'discovery';
+	const mode = (url.searchParams.get('mode') as AskMode) ?? 'discovery';
 
 	const query = url.searchParams.get('q') || '';
 

@@ -3,7 +3,8 @@ import type { PainsResponse } from '$lib/shared';
 export type PainKeywords = string[];
 export type PainMetrics = Record<string, number>;
 
-export type WorkflowMode = 'discovery' | 'validation' | 'pdf' | 'landing';
+export type AskMode = 'discovery' | 'validation';
+export type GenMode = 'pdf' | 'landing';
 
 export class Pain {
 	constructor(

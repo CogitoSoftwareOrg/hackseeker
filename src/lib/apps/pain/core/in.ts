@@ -1,6 +1,6 @@
 import type { PainsStatusOptions } from '$lib/shared';
 
-import type { Pain, WorkflowMode } from './models';
+import type { Pain, AskMode } from './models';
 
 export type PainCreateCmd = {
 	chatId: string;
@@ -22,21 +22,19 @@ export type PainUpdateCmd = {
 };
 
 export interface GenPainPdfCmd {
-	mode: WorkflowMode;
 	chatId: string;
 	userId: string;
 	painId: string;
 }
 
 export interface GenPainLandingCmd {
-	mode: WorkflowMode;
 	chatId: string;
 	userId: string;
 	painId: string;
 }
 
 export interface PainAskCmd {
-	mode: WorkflowMode;
+	mode: AskMode;
 	userId: string;
 	chatId: string;
 	query: string;

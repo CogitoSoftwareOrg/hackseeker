@@ -4,7 +4,7 @@ import {
 	type ChatsResponse,
 	type MessagesResponse
 } from '$lib';
-import type { WorkflowMode } from '$lib/apps/pain/core';
+import type { AskMode } from '$lib/apps/pain/core';
 
 export type Sender = {
 	id: string;
@@ -57,7 +57,7 @@ export type ChatEventMemory = {
 export class Chat {
 	constructor(
 		public readonly data: ChatsResponse<ChatExpand>,
-		public readonly mode: WorkflowMode
+		public readonly mode: AskMode
 	) {}
 
 	static fromResponse(res: ChatsResponse<ChatExpand>): Chat {
