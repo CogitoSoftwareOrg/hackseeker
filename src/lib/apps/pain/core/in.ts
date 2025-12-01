@@ -48,6 +48,8 @@ export interface PainCrud {
 	create(cmd: PainCreateCmd): Promise<Pain>;
 	update(cmd: PainUpdateCmd): Promise<Pain>;
 }
+
+// PUBLIC INTERFACES
 export interface PainAsker {
 	ask(cmd: PainAskCmd): Promise<string>;
 	askStream(cmd: PainAskCmd): Promise<ReadableStream>;
@@ -57,4 +59,8 @@ export interface PainGenerator {
 	genLanding(cmd: GenPainLandingCmd): Promise<void>;
 }
 
-export interface PainApp extends PainCrud, PainAsker, PainGenerator {}
+export interface PainValidator {
+	startValidation(painId: string): Promise<Pain>;
+}
+
+export interface PainApp extends PainAsker, PainGenerator, PainValidator {}
