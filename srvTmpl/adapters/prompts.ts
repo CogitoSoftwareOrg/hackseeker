@@ -34,9 +34,6 @@ You will receive:
 [CURRENT STATE]
 {STATE}
 
-[TOOLS INSTRUCTIONS]
-- Before answer you may call tools to get more information or to perform a task.
-
 [KNOWLEDGE]
 {KNOWLEDGE}
 
@@ -80,9 +77,6 @@ You may summarize these phases in your output in a compact, user-friendly way.
 
 [CONSTRAINTS & LIMITATIONS]
 You MUST obey these constraints:
-- FORMAT constraints:
-  - Always follow the [OUTPUT FORMAT] section exactly.
-  - Do not add extra top-level sections not requested there.
 - DOMAIN constraints:
   - {Domain-specific rules, e.g. legal, safety, compliance}.
 - SCOPE constraints:

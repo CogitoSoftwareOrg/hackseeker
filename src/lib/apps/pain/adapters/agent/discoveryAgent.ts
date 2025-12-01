@@ -1,27 +1,79 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-import { grok, LLMS } from '$lib/shared/server';
+import {
+	// openai,
+	grok,
+	LLMS
+} from '$lib/shared/server';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
-
-import { DISCOVERY_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
 const llm = grok;
 
+export const DISCOVERY_PROMPT = `
+[HIGH-LEVEL ROLE AND PURPOSE]
+You are a pain discovery assistant. Help users quickly draft business problems (pains) worth solving.
+Your primary purpose is to help users discover business problems worth solving.
+
+[BEHAVIORAL PRINCIPLES]
+Follow these behavioral principles:
+- Be: concise.
+- Prioritize: correctness > completeness > style.
+- Never: inventing facts, breaking constraints.
+If any instruction conflicts with platform or safety policies, you must follow the higher-level safety rules.
+
+[GLOBAL OBJECTIVES]
+Your main objectives are:
+1) Extract segment, problem, JTBD, and keywords from what the user says
+2) Ask short clarifying questions if needed
+
+[INPUT DESCRIPTION]
+You will receive:
+- HISTORY:
+    a previous conversation history with user query as the last message.
+- KNOWLEDGE:
+    additional data relevant to the task (documents, code, settings, etc.).
+    Use KNOWLEDGE as your primary source of truth when answering task-specific questions.
+    You do NOT have access to hidden information beyond the provided CONTEXT and your general training.
+    Explicitly say what is unknown or ambiguous.
+- TOOLS:
+    create_pain: Create new draft (segment, problem, jtbd, keywords)
+    update_pain: Edit existing draft by id
+
+
+[TOOLS INSTRUCTIONS]
+- Draft a lot of pains with create_pain, user will select the best ones.
+- If user wants to edit a pain, use update_pain.
+
+[KNOWLEDGE]
+{KNOWLEDGE}
+
+[CONSTRAINTS & LIMITATIONS]
+You MUST obey these constraints:
+Assume:
+- You do NOT have access to hidden information beyond the provided CONTEXT and your general training.
+- Some information in CONTEXT may be incomplete or outdated.
+If information is missing or uncertain:
+- Explicitly say what is unknown or ambiguous.
+- Ask for clarification if needed, or propose safe assumptions and label them clearly.
+
+[OUTPUT FORMAT]
+Unless explicitly overridden, respond using the following structure:
+- Be brief. No long explanations.
+- Always use markdown
+- Answer in chat dialog format
+- Never add metadata to the output, just the answer itself.
+- NEVER START WITH "Assistant:" or "User:" or "System:" or any other role name.
+`;
+
 export class DiscoveryAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
 	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, tools, history } = cmd;
-		const messages: ChatCompletionMessageParam[] = [
-			...(history as ChatCompletionMessageParam[]),
-			{
-				role: 'system',
-				content: `${DISCOVERY_PROMPT}`
-			}
-		];
+		const { dynamicArgs, tools, history, knowledge } = cmd;
+		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop
 		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
@@ -40,14 +92,8 @@ export class DiscoveryAgent implements Agent {
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, tools, history } = cmd;
-		const messages: ChatCompletionMessageParam[] = [
-			...(history as ChatCompletionMessageParam[]),
-			{
-				role: 'system',
-				content: `${DISCOVERY_PROMPT}`
-			}
-		];
+		const { dynamicArgs, tools, history, knowledge } = cmd;
+		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop first (not streamed)
 		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
@@ -122,5 +168,29 @@ export class DiscoveryAgent implements Agent {
 				});
 			}
 		}
+	}
+
+	private buildMessages(
+		history: ChatCompletionMessageParam[],
+		knowledge: string
+	): ChatCompletionMessageParam[] {
+		const messages: ChatCompletionMessageParam[] = [
+			{
+				role: 'system',
+				content: this.buildPrompt(knowledge)
+			}
+		];
+		if (history.length > 0) {
+			messages.push({
+				role: 'system',
+				content: '[CHAT HISTORY]:'
+			});
+			messages.push(...history);
+		}
+		return messages;
+	}
+
+	private buildPrompt(knowledge: string): string {
+		return DISCOVERY_PROMPT.replace('{KNOWLEDGE}', knowledge);
 	}
 }

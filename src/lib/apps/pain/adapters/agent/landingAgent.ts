@@ -1,30 +1,37 @@
-import type { Tool, ToolCall } from '$lib/apps/llmTools/core';
+import type { ChatCompletionMessageParam } from 'openai/resources';
+
+import type { Tool, ToolCall, Agent, AgentRunCmd } from '$lib/shared/server';
 import {
 	grok,
 	// openai,
 	LLMS
 } from '$lib/shared/server';
-import type { ChatCompletionMessageParam } from 'openai/resources';
-
-import type { Agent, AgentRunCmd } from '../../core';
-import { LANDING_PROMPT } from './prompts';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
 const llm = grok;
 
+export const LANDING_PROMPT = `
+You are a landing page generation assistant. Help users generate a full marketing landing page as a single self-contained HTML document based on a business problem or product description.
+
+## Your job
+- Generate a full marketing landing page as a single self-contained HTML document based on a business problem or product description
+- Keep responses short with actionable information
+
+## Rules
+- Be brief. No long explanations.
+- Always use markdown
+- Answer in chat dialog format
+
+## Tools
+- extract_information: Extract information from PDFs;
+`;
 export class LandingAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
 	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, tools, history } = cmd;
-		const messages: ChatCompletionMessageParam[] = [
-			...(history as ChatCompletionMessageParam[]),
-			{
-				role: 'system',
-				content: LANDING_PROMPT
-			}
-		];
+		const { dynamicArgs, tools, history, knowledge } = cmd;
+		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop
 		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
@@ -43,14 +50,8 @@ export class LandingAgent implements Agent {
 	}
 
 	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, tools, history } = cmd;
-		const messages: ChatCompletionMessageParam[] = [
-			...(history as ChatCompletionMessageParam[]),
-			{
-				role: 'system',
-				content: LANDING_PROMPT
-			}
-		];
+		const { dynamicArgs, tools, history, knowledge } = cmd;
+		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop first (not streamed)
 		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
@@ -125,5 +126,29 @@ export class LandingAgent implements Agent {
 				});
 			}
 		}
+	}
+
+	private buildMessages(
+		history: ChatCompletionMessageParam[],
+		knowledge: string
+	): ChatCompletionMessageParam[] {
+		const messages: ChatCompletionMessageParam[] = [
+			{
+				role: 'system',
+				content: this.buildPrompt(knowledge)
+			}
+		];
+		if (history.length > 0) {
+			messages.push({
+				role: 'system',
+				content: '[CHAT HISTORY]:'
+			});
+			messages.push(...history);
+		}
+		return messages;
+	}
+
+	private buildPrompt(knowledge: string): string {
+		return LANDING_PROMPT.replace('{KNOWLEDGE}', knowledge);
 	}
 }
