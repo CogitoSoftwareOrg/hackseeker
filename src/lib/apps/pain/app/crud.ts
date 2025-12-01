@@ -41,7 +41,8 @@ export class PainCrudImpl implements PainCrud {
 			segment: cmd.segment ?? undefined,
 			problem: cmd.problem ?? undefined,
 			jtbd: cmd.jtbd ?? undefined,
-			keywords: cmd.keywords ?? undefined
+			keywords: cmd.keywords ?? undefined,
+			status: cmd.status ?? undefined
 		};
 		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
 			.collection(Collections.Pains)

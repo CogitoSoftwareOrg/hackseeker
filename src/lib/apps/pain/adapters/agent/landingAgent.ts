@@ -34,7 +34,8 @@ export class LandingAgent implements Agent {
 		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		const loopTools = [...tools, ...this.tools];
+		if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
 
 		// Final response (no tools)
 		const res = await llm.chat.completions.create({
@@ -54,7 +55,8 @@ export class LandingAgent implements Agent {
 		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		const loopTools = [...tools, ...this.tools];
+		if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
 
 		// Stream only the final response
 		const res = await llm.chat.completions.create({

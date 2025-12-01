@@ -36,6 +36,8 @@
 	// Get queries for filter dropdown
 	const queries = $derived(searchQueriesStore.queries);
 
+	const usedQueries = $derived(queries.filter((q) => q.offset > 0));
+
 	// Importance order for sorting
 	const importanceOrder: Record<ArtifactsImportanceOptions, number> = {
 		[ArtifactsImportanceOptions.high]: 0,
@@ -133,12 +135,12 @@
 		</div>
 
 		<!-- Query filter -->
-		{#if queries.length > 0}
+		{#if usedQueries.length > 0}
 			<div class="flex items-center gap-2">
 				<Filter size={12} class="text-base-content/50" />
 				<select class="select select-bordered flex-1" bind:value={filterQueryId}>
 					<option value={null}>All queries</option>
-					{#each queries as query (query.id)}
+					{#each usedQueries as query (query.id)}
 						<option value={query.id}>{getQueryLabel(query.id)}</option>
 					{/each}
 				</select>
@@ -170,7 +172,7 @@
 							{#if artifact.title}
 								<p class="text-xs font-medium text-base-content/80">{artifact.title}</p>
 							{/if}
-							<p class={['line-clamp-2 text-sm', artifact.title && 'text-base-content/70']}>
+							<p class={['line-clamp-5 text-sm', artifact.title && 'text-base-content/70']}>
 								{getArtifactContent(artifact)}
 							</p>
 							{#if artifact.source}

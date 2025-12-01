@@ -46,7 +46,7 @@ export class PainAppImpl implements PainApp {
 		this.preparator = new PreparatorImpl(this.crud, this.chatApp, this.userApp, this.artifactApp);
 		this.asker = new PainAskerImpl(this.preparator, this.crud, this.agents, this.chatApp);
 		this.generator = new PainGeneratorImpl(this.preparator, this.agents, this.renderer);
-		this.validator = new PainValidatorImpl(this.searchApp);
+		this.validator = new PainValidatorImpl(this.crud, this.searchApp, this.chatApp);
 	}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
@@ -65,7 +65,7 @@ export class PainAppImpl implements PainApp {
 		return this.asker.askStream(cmd);
 	}
 
-	async startValidation(painId: string): Promise<Pain> {
-		return this.validator.startValidation(painId);
+	async startValidation(painId: string, chatId: string): Promise<Pain> {
+		return this.validator.startValidation(painId, chatId);
 	}
 }

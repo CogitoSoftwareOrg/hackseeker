@@ -5,7 +5,8 @@ import {
 	pb,
 	type ChatExpand,
 	type ChatsResponse,
-	ChatsStatusOptions
+	ChatsStatusOptions,
+	type Update
 } from '$lib/shared';
 import { LLMS, TOKENIZERS } from '$lib/shared/server';
 
@@ -72,6 +73,11 @@ export class ChatAppImpl implements ChatApp {
 	async getHistory(chatId: string, tokens: number): Promise<OpenAIMessage[]> {
 		const chat = await this.getChat(chatId);
 		return this.trimMessages(chat, tokens);
+	}
+
+	async update(chatId: string, dto: Update<Collections.Chats>): Promise<Chat> {
+		await pb.collection(Collections.Chats).update(chatId, dto);
+		return this.getChat(chatId);
 	}
 
 	private async getChat(chatId: string): Promise<Chat> {

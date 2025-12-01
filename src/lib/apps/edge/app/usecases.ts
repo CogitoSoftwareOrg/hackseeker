@@ -33,7 +33,6 @@ export class EdgeAppImpl implements EdgeApp {
 		if (principal.remaining < PDF_CHARGE_AMOUNT) throw new Error('Insufficient balance');
 
 		await this.painApp.genPdf({
-			mode: 'pdf',
 			userId: principal.user.id,
 			chatId,
 			painId
@@ -48,7 +47,6 @@ export class EdgeAppImpl implements EdgeApp {
 		if (principal.remaining < LANDING_CHARGE_AMOUNT) throw new Error('Insufficient balance');
 
 		await this.painApp.genLanding({
-			mode: 'landing',
 			userId: principal.user.id,
 			chatId,
 			painId
@@ -76,11 +74,11 @@ export class EdgeAppImpl implements EdgeApp {
 	}
 
 	async startPainValidation(cmd: StartPainValidationCmd): Promise<void> {
-		const { principal, painId } = cmd;
+		const { principal, painId, chatId } = cmd;
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining <= 0) throw new Error('Insufficient balance');
 
-		await this.painApp.startValidation(painId);
+		await this.painApp.startValidation(painId, chatId);
 
 		await this.userApp.charge({ subId: principal.sub.id, amount: DEFAULT_CHARGE_AMOUNT });
 	}

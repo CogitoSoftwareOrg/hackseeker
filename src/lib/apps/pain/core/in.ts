@@ -19,6 +19,7 @@ export type PainUpdateCmd = {
 	problem?: string;
 	jtbd?: string;
 	keywords?: string[];
+	status?: PainsStatusOptions;
 };
 
 export interface GenPainPdfCmd {
@@ -58,7 +59,7 @@ export interface PainGenerator {
 }
 
 export interface PainValidator {
-	startValidation(painId: string): Promise<Pain>;
+	startValidation(painId: string, chatId: string): Promise<Pain>;
 }
 
 export interface PainApp extends PainAsker, PainGenerator, PainValidator {}

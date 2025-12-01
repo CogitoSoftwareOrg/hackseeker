@@ -4,6 +4,7 @@ import type { Principal } from '$lib/apps/user/core';
 export interface StartPainValidationCmd {
 	principal: Principal;
 	painId: string;
+	chatId: string;
 }
 export interface GenPainPdfCmd {
 	principal: Principal;

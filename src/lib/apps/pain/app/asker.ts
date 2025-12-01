@@ -58,7 +58,7 @@ export class PainAskerImpl implements PainAsker {
 			}
 		});
 
-		await this.chatApp.postProcessMessage(aiMsg.id, result);
+		await this.chatApp.postProcessMessage(aiMsg!.id, result);
 
 		return result;
 	}
@@ -105,9 +105,9 @@ export class PainAskerImpl implements PainAsker {
 						const { value, done } = await reader.read();
 						if (done) break;
 						content += value;
-						controller.enqueue(JSON.stringify({ text: value, msgId: aiMsg.id }));
+						controller.enqueue(JSON.stringify({ text: value, msgId: aiMsg!.id }));
 					}
-					await chatApp.postProcessMessage(aiMsg.id, content);
+					await chatApp.postProcessMessage(aiMsg!.id, content);
 				} catch (error) {
 					controller.error(error);
 				} finally {

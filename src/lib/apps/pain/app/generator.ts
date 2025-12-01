@@ -13,7 +13,13 @@ export class PainGeneratorImpl implements PainGenerator {
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
-		const { history, knowledge } = await this.preparator.prepare('pdf', cmd.chatId, cmd.userId, '');
+		const { history, knowledge } = await this.preparator.prepare(
+			'pdf',
+			cmd.chatId,
+			cmd.userId,
+			'Generate a PDF report for the chat',
+			false
+		);
 
 		const agent = this.agents['pdf'];
 		const pdfContent = await agent.run({
@@ -34,7 +40,8 @@ export class PainGeneratorImpl implements PainGenerator {
 			'landing',
 			cmd.chatId,
 			cmd.userId,
-			''
+			'Generate a landing page for the chat',
+			false
 		);
 		const agent = this.agents['landing'];
 

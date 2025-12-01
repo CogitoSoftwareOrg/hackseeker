@@ -1,4 +1,4 @@
-import { Chromiumly } from 'chromiumly';
+import { Chromiumly, HtmlConverter } from 'chromiumly';
 import { env } from '$env/dynamic/private';
 
 import type { Renderer } from '../../core';
@@ -11,26 +11,23 @@ Chromiumly.configure({
 
 export class PdfRenderer implements Renderer {
 	async render(content: string): Promise<Blob> {
-		// const browser = await chromium.launch();
-		// const page = await browser.newPage();
+		console.log('content length', content.length);
 
-		// await page.setContent(content, { waitUntil: 'networkidle' });
+		const htmlConverter = new HtmlConverter();
 
-		// await page.pdf({
-		// 	path: 'result.pdf',
-		// 	format: 'A4',
-		// 	printBackground: true,
-		// 	margin: {
-		// 		top: '20mm',
-		// 		right: '15mm',
-		// 		bottom: '20mm',
-		// 		left: '15mm'
-		// 	}
-		// });
+		const buffer = await htmlConverter.convert({
+			html: Buffer.from(content, 'utf-8'),
+			properties: {
+				printBackground: true,
+				margins: {
+					top: 0.79, // ~20 мм
+					right: 0.59, // ~15 мм
+					bottom: 0.79,
+					left: 0.59
+				}
+			}
+		});
 
-		// await browser.close();
-
-		// const buffer = await fs.promises.readFile('result.pdf');
-		return new Blob([content], { type: 'application/pdf' });
+		return new Blob([new Uint8Array(buffer)], { type: 'application/pdf' });
 	}
 }

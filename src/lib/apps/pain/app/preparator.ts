@@ -26,20 +26,25 @@ export class PreparatorImpl {
 		mode: AskMode | GenMode,
 		chatId: string,
 		userId: string,
-		query: string
+		query: string,
+		withMessages: boolean = true
 	): Promise<{
 		history: OpenAIMessage[];
-		aiMsg: MessagesResponse;
-		userMsg: MessagesResponse;
+		aiMsg: MessagesResponse | null;
+		userMsg: MessagesResponse | null;
 		knowledge: string;
 	}> {
-		const { aiMsg, userMsg } = await this.chatApp.prepareMessages(chatId, query);
-
 		const history = await this.chatApp.getHistory(chatId, HISTORY_TOKENS);
-
 		const knowledge = await this.buildKnowledge(mode, userId, chatId, query);
 
-		return { history, aiMsg, userMsg, knowledge };
+		let msgs: { aiMsg: MessagesResponse | null; userMsg: MessagesResponse | null } = {
+			aiMsg: null,
+			userMsg: null
+		};
+		if (withMessages) {
+			msgs = await this.chatApp.prepareMessages(chatId, query);
+		}
+		return { history, aiMsg: msgs.aiMsg, userMsg: msgs.userMsg, knowledge };
 	}
 
 	async buildKnowledge(
@@ -58,6 +63,7 @@ export class PreparatorImpl {
 			})
 			.join('\n');
 
+		console.log('userMemories', userId, query.slice(0, 50));
 		const userMemories = await this.userApp.getMemories({
 			userId: userId,
 			query: query,
@@ -68,6 +74,7 @@ export class PreparatorImpl {
 			knowledge += userMemories.map((user) => `- ${user.content}`).join('\n');
 		}
 
+		console.log('chatEventMemories', chatId, query.slice(0, 50));
 		const chatEventMemories = await this.chatApp.getMemories({
 			chatId: chatId,
 			query: query,

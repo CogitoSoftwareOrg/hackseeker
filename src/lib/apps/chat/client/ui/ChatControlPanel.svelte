@@ -74,7 +74,7 @@
 
 		try {
 			pdfGenerating = true;
-			await painApi.genPdf(pain.id);
+			await painApi.genPdf(pain.id, chat.id);
 		} catch (error) {
 			console.error(error);
 		} finally {
@@ -88,7 +88,7 @@
 
 		try {
 			landingGenerating = true;
-			await painApi.genLanding(pain.id);
+			await painApi.genLanding(pain.id, chat.id);
 		} catch (error) {
 			console.error(error);
 		} finally {

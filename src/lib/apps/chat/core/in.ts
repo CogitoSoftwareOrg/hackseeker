@@ -1,7 +1,7 @@
 import type { Principal } from '$lib/apps/user/core';
-import type { MessagesResponse } from '$lib/shared';
+import type { Collections, MessagesResponse, Update } from '$lib/shared';
 
-import type { ChatEventMemory, EventType, Importance, OpenAIMessage } from './models';
+import type { Chat, ChatEventMemory, EventType, Importance, OpenAIMessage } from './models';
 
 export type ChatEventMemoryGetCmd = {
 	query: string;
@@ -25,6 +25,7 @@ export interface ChatApp {
 
 	postProcessMessage(aiMsgId: string, content: string): Promise<void>;
 
+	update(chatId: string, dto: Update<Collections.Chats>): Promise<Chat>;
 	prepareMessages(
 		chatId: string,
 		query: string
