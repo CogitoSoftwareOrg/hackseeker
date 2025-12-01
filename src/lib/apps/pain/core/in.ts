@@ -1,3 +1,5 @@
+import type { PainsStatusOptions } from '$lib/shared';
+
 import type { Pain, WorkflowMode } from './models';
 
 export type PainCreateCmd = {
@@ -40,18 +42,19 @@ export interface PainAskCmd {
 	query: string;
 }
 
-export interface PainApp {
-	ask(cmd: PainAskCmd): Promise<string>;
-	askStream(cmd: PainAskCmd): Promise<ReadableStream>;
-
-	genPdf(cmd: GenPainPdfCmd): Promise<void>;
-	genLanding(cmd: GenPainLandingCmd): Promise<void>;
-
-	getByChatId(chatId: string): Promise<Pain[]>;
-
+export interface PainCrud {
+	getByChatId(chatId: string, status?: PainsStatusOptions): Promise<Pain[]>;
 	getById(id: string): Promise<Pain>;
 	create(cmd: PainCreateCmd): Promise<Pain>;
 	update(cmd: PainUpdateCmd): Promise<Pain>;
-
-	startValidation(painId: string): Promise<Pain>;
 }
+export interface PainAsker {
+	ask(cmd: PainAskCmd): Promise<string>;
+	askStream(cmd: PainAskCmd): Promise<ReadableStream>;
+}
+export interface PainGenerator {
+	genPdf(cmd: GenPainPdfCmd): Promise<void>;
+	genLanding(cmd: GenPainLandingCmd): Promise<void>;
+}
+
+export interface PainApp extends PainCrud, PainAsker, PainGenerator {}

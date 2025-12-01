@@ -16,17 +16,20 @@ import {
 	Pain,
 	type PainApp,
 	type PainAskCmd,
-	type PainCreateCmd,
 	type PainKeywords,
 	type PainMetrics,
-	type PainUpdateCmd,
 	type WorkflowMode,
 	CreatePainToolSchema,
 	UpdatePainToolSchema,
 	type GenPainPdfCmd,
 	type GenPainLandingCmd,
-	type Renderer
+	type Renderer,
+	type PainCrud,
+	type PainCreateCmd,
+	type PainUpdateCmd
 } from '../core';
+
+import { PainCrudImpl } from './crud';
 
 const HISTORY_TOKENS = 2000;
 const USER_TOKENS = 5000;
@@ -34,6 +37,8 @@ const CHAT_EVENT_TOKENS = 5000;
 const ARTIFCAT_TOKENS = 5000;
 
 export class PainAppImpl implements PainApp {
+	private readonly crud: PainCrud;
+
 	constructor(
 		// Adapters
 		private readonly agents: Record<WorkflowMode, Agent>,
@@ -43,7 +48,9 @@ export class PainAppImpl implements PainApp {
 		private readonly chatApp: ChatApp,
 		private readonly artifactApp: ArtifactApp,
 		private readonly userApp: UserApp
-	) {}
+	) {
+		this.crud = new PainCrudImpl();
+	}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
 		const { history, knowledge } = await this.prepare(cmd.mode, cmd.chatId, cmd.userId, '');
@@ -179,44 +186,21 @@ export class PainAppImpl implements PainApp {
 		return pain;
 	}
 
-	async getByChatId(chatId: string, status?: PainsStatusOptions): Promise<Pain[]> {
-		const recs: PainsResponse<PainKeywords, PainMetrics>[] = await pb
-			.collection(Collections.Pains)
-			.getFullList({
-				filter: status
-					? `chats:each = "${chatId}" && archived = null && status = "${status}"`
-					: `chats:each = "${chatId}" && archived = null`
-			});
-		return recs.map(Pain.fromResponse);
+	// CRUD
+	getByChatId(chatId: string, status?: PainsStatusOptions): Promise<Pain[]> {
+		return this.crud.getByChatId(chatId, status);
+	}
+	getById(id: string): Promise<Pain> {
+		return this.crud.getById(id);
+	}
+	create(cmd: PainCreateCmd): Promise<Pain> {
+		return this.crud.create(cmd);
+	}
+	update(cmd: PainUpdateCmd): Promise<Pain> {
+		return this.crud.update(cmd);
 	}
 
-	async getById(id: string): Promise<Pain> {
-		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
-			.collection(Collections.Pains)
-			.getOne(id);
-		return Pain.fromResponse(rec);
-	}
-
-	async create(cmd: PainCreateCmd) {
-		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
-			.collection(Collections.Pains)
-			.create({ ...cmd, status: PainsStatusOptions.draft, chats: [cmd.chatId], user: cmd.userId });
-		return Pain.fromResponse(rec);
-	}
-
-	async update(cmd: PainUpdateCmd) {
-		const dto = {
-			segment: cmd.segment ?? undefined,
-			problem: cmd.problem ?? undefined,
-			jtbd: cmd.jtbd ?? undefined,
-			keywords: cmd.keywords ?? undefined
-		};
-		const rec: PainsResponse<PainKeywords, PainMetrics> = await pb
-			.collection(Collections.Pains)
-			.update(cmd.id, dto);
-		return Pain.fromResponse(rec);
-	}
-
+	// PRIVATE UTILS
 	private async prepare(
 		mode: WorkflowMode,
 		chatId: string,
