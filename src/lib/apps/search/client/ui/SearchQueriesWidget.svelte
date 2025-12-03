@@ -1,5 +1,9 @@
 <script lang="ts">
-	import type { PainsResponse, SearchQueriesResponse } from '$lib/shared';
+	import {
+		SearchQueriesStatusOptions,
+		type PainsResponse,
+		type SearchQueriesResponse
+	} from '$lib/shared';
 	import { Search, Globe, Play, Check, X, Pencil } from 'lucide-svelte';
 
 	import { artifactApi } from '$lib/apps/artifact/client';
@@ -25,7 +29,11 @@
 	let editingId: string | null = $state(null);
 	let editQuery = $state('');
 	let editSite = $state('');
-	let runningId: string | null = $state(null);
+	let runningIds = $derived(
+		new Set(
+			pendingQueries.filter((q) => q.status === SearchQueriesStatusOptions.running).map((q) => q.id)
+		)
+	);
 
 	function startEdit(query: SearchQueriesResponse) {
 		editingId = query.id;
@@ -54,15 +62,21 @@
 	}
 
 	async function runSearch(query: SearchQueriesResponse) {
-		if (runningId) return;
-		runningId = query.id;
+		// Skip if already running
+		if (runningIds.has(query.id)) return;
+
+		// Add to running set
+		runningIds = new Set([...runningIds, query.id]);
 
 		try {
 			await artifactApi.search([query.id], pain.id);
 		} catch (error) {
 			console.error('Failed to run search:', error);
 		} finally {
-			runningId = null;
+			// Remove from running set
+			const newSet = new Set(runningIds);
+			newSet.delete(query.id);
+			runningIds = newSet;
 		}
 	}
 
@@ -136,9 +150,9 @@
 							<button
 								class="btn btn-primary btn-xs btn-square"
 								onclick={() => runSearch(query)}
-								disabled={runningId !== null}
+								disabled={runningIds.has(query.id)}
 							>
-								{#if runningId === query.id}
+								{#if runningIds.has(query.id)}
 									<span class="loading loading-spinner loading-xs"></span>
 								{:else}
 									<Play size={12} />

@@ -39,14 +39,14 @@
 			title: 'Actionable Report',
 			description:
 				'Get a structured PDF with opportunity scores, competitor landscape, and implementation recommendations.',
-			status: 'coming'
+			status: 'active'
 		},
 		{
 			icon: Globe2,
 			title: 'ZeroLanding Generator',
 			description:
 				'Instantly create a landing page with waitlist form to validate demand and collect early adopters.',
-			status: 'coming'
+			status: 'active'
 		}
 	];
 

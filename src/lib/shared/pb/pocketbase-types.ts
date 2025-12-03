@@ -276,6 +276,13 @@ export enum SearchQueriesTypeOptions {
 	"launchExamples" = "launchExamples",
 	"general" = "general",
 }
+
+export enum SearchQueriesStatusOptions {
+	"idle" = "idle",
+	"running" = "running",
+	"error" = "error",
+	"success" = "success",
+}
 export type SearchQueriesRecord = {
 	created: IsoAutoDateString
 	id: string
@@ -283,6 +290,7 @@ export type SearchQueriesRecord = {
 	pain?: RecordIdString
 	query?: string
 	site?: string
+	status?: SearchQueriesStatusOptions
 	type?: SearchQueriesTypeOptions
 	updated: IsoAutoDateString
 }

@@ -118,6 +118,10 @@
 					</Button>
 				</div>
 			{/if}
+
+			<Button target="_blank" size="sm" variant="soft" href="https://cogitosoftware.nl/mvp-offer"
+				>Build MVP in a 7 days</Button
+			>
 		</div>
 
 		<!-- Right side: Right sidebar toggle (mobile only) -->

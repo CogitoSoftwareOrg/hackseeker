@@ -1,7 +1,12 @@
 import type { SearchData, SearchResultWeb } from '@mendable/firecrawl-js';
 
 import { firecrawl } from '$lib/shared/server';
-import { Collections, pb, type SearchQueriesResponse } from '$lib/shared';
+import {
+	Collections,
+	pb,
+	SearchQueriesStatusOptions,
+	type SearchQueriesResponse
+} from '$lib/shared';
 
 import { type SearchApp, type SearchResult, type QueryGenerator, SEARCH_LIMIT } from '../core';
 
@@ -15,7 +20,8 @@ export class SearchAppImpl implements SearchApp {
 				return await pb.collection(Collections.SearchQueries).create({
 					pain: painId,
 					query: query.query,
-					type: query.type
+					type: query.type,
+					status: SearchQueriesStatusOptions.idle
 				});
 			})
 		);
@@ -27,7 +33,6 @@ export class SearchAppImpl implements SearchApp {
 			filter: `id ?= "${queryIds.join(',')}"`,
 			sort: '-created'
 		});
-		console.log('queries', queries);
 
 		const results = await Promise.all(
 			queries.map(async (q) => {
@@ -56,13 +61,27 @@ export class SearchAppImpl implements SearchApp {
 	}
 
 	async searchQuery(id: string, query: string, site?: string, limit?: number): Promise<SearchData> {
-		const q = site ? `${query} site:${site}` : query;
-		const res = await firecrawl.search(q, {
-			limit: limit ?? SEARCH_LIMIT,
-			scrapeOptions: { formats: ['markdown'] }
-		});
-		await pb.collection(Collections.SearchQueries).update(id, { offset: limit ?? SEARCH_LIMIT });
+		await pb
+			.collection(Collections.SearchQueries)
+			.update(id, { status: SearchQueriesStatusOptions.running });
 
-		return res;
+		try {
+			const q = site ? `${query} site:${site}` : query;
+			const res = await firecrawl.search(q, {
+				limit: limit ?? SEARCH_LIMIT,
+				scrapeOptions: { formats: ['markdown'] }
+			});
+			await pb
+				.collection(Collections.SearchQueries)
+				.update(id, { offset: limit ?? SEARCH_LIMIT, status: SearchQueriesStatusOptions.success });
+
+			return res;
+		} catch (error) {
+			console.error('Failed to search query:', error);
+			await pb
+				.collection(Collections.SearchQueries)
+				.update(id, { status: SearchQueriesStatusOptions.error });
+			throw error;
+		}
 	}
 }

@@ -127,7 +127,7 @@
 			</div>
 
 			{#if mode === 'validation'}
-				<div>
+				<div class="flex items-center gap-2">
 					{#if !pain?.report}
 						<Button
 							disabled={pdfGenerating}
@@ -136,7 +136,8 @@
 							onclick={() => (pdfModalOpen = true)}
 						>
 							<File size={16} />
-							Gen PDF
+							<span class="hidden sm:block">Gen PDF</span>
+							<span class="sm:hidden">PDF</span>
 						</Button>
 					{:else}
 						<Button
@@ -149,7 +150,8 @@
 							onclick={() => (pdfModalOpen = true)}
 						>
 							<File size={16} />
-							View PDF
+							<span class="hidden sm:block">View PDF</span>
+							<span class="sm:hidden">PDF</span>
 						</Button>
 					{/if}
 
@@ -161,7 +163,8 @@
 							onclick={() => (landingModalOpen = true)}
 						>
 							<Landmark size={16} />
-							Gen Landing
+							<span class="hidden sm:block">Gen Landing page</span>
+							<span class="sm:hidden">Landing</span>
 						</Button>
 					{:else}
 						<Button
@@ -173,7 +176,8 @@
 							color="success"
 						>
 							<Landmark size={16} />
-							View Landing
+							<span class="hidden sm:block">View Landing</span>
+							<span class="sm:hidden">Landing</span>
 						</Button>
 					{/if}
 				</div>

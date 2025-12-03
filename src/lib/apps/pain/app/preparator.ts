@@ -85,7 +85,7 @@ export class PreparatorImpl {
 			knowledge += chatEventMemories.map((chatEvent) => `- ${chatEvent.content}`).join('\n');
 		}
 
-		if (mode === 'validation') {
+		if (mode !== 'discovery') {
 			const pain = pains[0]!;
 			const artifactMemories = await this.artifactApp.getMemories({
 				userId: userId,

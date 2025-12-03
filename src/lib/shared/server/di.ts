@@ -27,10 +27,10 @@ export const getDI = () => {
 
 	const searchApp = getSearchApp();
 
-	const artifactApp = getArtifactApp(searchApp);
-
 	const userApp = getUserApp();
 	const chatApp = getChatApp();
+
+	const artifactApp = getArtifactApp(searchApp);
 
 	const painApp = getPainApp(searchApp, artifactApp, chatApp, userApp);
 

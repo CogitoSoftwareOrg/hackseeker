@@ -1,30 +1,42 @@
 import z from 'zod';
 
 import type { Artifact } from './models';
-import type { ArtifactsTypeOptions } from '$lib/shared';
+import { ArtifactsImportanceOptions, type ArtifactsTypeOptions } from '$lib/shared';
 
 export const ExtractorResultSchema = z.object({
 	quotes: z.array(
 		z.object({
 			content: z.string().describe('The quote content'),
-			author: z.string()
+			author: z.string(),
+			importance: z
+				.enum(Object.values(ArtifactsImportanceOptions))
+				.describe('The importance of the quote')
 		})
 	),
 	insights: z.array(
 		z.object({
-			content: z.string().describe('The meaning of the insight')
+			content: z.string().describe('The meaning of the insight'),
+			importance: z
+				.enum(Object.values(ArtifactsImportanceOptions))
+				.describe('The importance of the insight')
 		})
 	),
 	competitors: z.array(
 		z.object({
 			name: z.string().describe('The name of the competitor'),
 			description: z.string().describe('The description of the competitor'),
-			links: z.array(z.string()).describe('List of links to the competitor')
+			links: z.array(z.string()).describe('List of links to the competitor'),
+			importance: z
+				.enum(Object.values(ArtifactsImportanceOptions))
+				.describe('The importance of the competitor')
 		})
 	),
 	hacks: z.array(
 		z.object({
-			description: z.string().describe('The description of the hack')
+			description: z.string().describe('The description of the hack'),
+			importance: z
+				.enum(Object.values(ArtifactsImportanceOptions))
+				.describe('The importance of the hack')
 		})
 	)
 });

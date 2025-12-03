@@ -1,6 +1,6 @@
 import type z from 'zod';
 
-import { ArtifactsImportanceOptions, Collections, pb } from '$lib';
+import { Collections, pb } from '$lib';
 import type { SearchApp, SearchResult } from '$lib/apps/search/core';
 
 import {
@@ -78,7 +78,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				type: 'quote',
 				metadata: dto.metadata,
 				payload: quote,
-				importance: ArtifactsImportanceOptions.mid
+				importance: quote.importance
 			});
 			artifacts.push(Artifact.fromResponse(rec));
 		}
@@ -90,7 +90,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'insight',
 				payload: insight,
-				importance: ArtifactsImportanceOptions.mid,
+				importance: insight.importance,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));
@@ -103,7 +103,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'competitor',
 				payload: competitor,
-				importance: ArtifactsImportanceOptions.mid,
+				importance: competitor.importance,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));
@@ -116,7 +116,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 				source: dto.url,
 				type: 'hack',
 				payload: hack,
-				importance: ArtifactsImportanceOptions.mid,
+				importance: hack.importance,
 				metadata: dto.metadata
 			});
 			artifacts.push(Artifact.fromResponse(rec));

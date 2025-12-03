@@ -114,7 +114,7 @@
 		const query = queries.find((q) => q.id === queryId);
 		if (!query) return 'Unknown';
 		return (
-			query.query?.slice(0, 30) + (query.query && query.query.length > 30 ? '...' : '') ||
+			query.query?.slice(0, 50) + (query.query && query.query.length > 50 ? '...' : '') ||
 			'Untitled'
 		);
 	}
