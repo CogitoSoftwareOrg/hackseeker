@@ -24,29 +24,25 @@
 			icon: MessageSquare,
 			title: 'Describe Your Idea',
 			description:
-				'Chat with HackSeeker about your product concept. Our AI transforms vague thoughts into structured pain hypotheses.',
-			status: 'active'
+				'Chat with HackSeeker about your product concept. Our AI transforms vague thoughts into structured pain hypotheses.'
 		},
 		{
 			icon: Search,
 			title: 'Automated Validation',
 			description:
-				'We scan Google, Reddit, ProductHunt, and forums to find real market signals, competitors, and demand proof.',
-			status: 'active'
+				'We scan Google, Reddit, ProductHunt, and forums to find real market signals, competitors, and demand proof.'
 		},
 		{
 			icon: FileText,
 			title: 'Actionable Report',
 			description:
-				'Get a structured PDF with opportunity scores, competitor landscape, and implementation recommendations.',
-			status: 'active'
+				'Get a structured PDF with opportunity scores, competitor landscape, and implementation recommendations.'
 		},
 		{
 			icon: Globe2,
 			title: 'ZeroLanding Generator',
 			description:
-				'Instantly create a landing page with waitlist form to validate demand and collect early adopters.',
-			status: 'active'
+				'Instantly create a landing page with waitlist form to validate demand and collect early adopters.'
 		}
 	];
 
@@ -281,24 +277,10 @@
 								{i + 1}
 							</div>
 
-							<!-- Coming Soon Badge -->
-							{#if step.status === 'coming'}
-								<div
-									class="absolute top-4 right-4 px-2 py-1 bg-accent/10 text-accent text-xs font-bold rounded-sm"
-								>
-									COMING SOON
-								</div>
-							{/if}
-
 							<div
 								class="w-14 h-14 rounded-sm bg-base-200 flex items-center justify-center mb-6 group-hover:bg-primary/10 transition-colors"
 							>
-								<svelte:component
-									this={step.icon}
-									class="w-7 h-7 {step.status === 'coming'
-										? 'text-base-content/40'
-										: 'text-primary'}"
-								/>
+								<svelte:component this={step.icon} class="w-7 h-7 text-primary" />
 							</div>
 
 							<h3 class="text-xl font-bold mb-3">{step.title}</h3>
@@ -374,7 +356,7 @@
 				</div>
 
 				<div class="space-y-4">
-					{#each [{ title: 'Structured Pain Hypothesis', description: 'Your vague idea transformed into a clear, testable problem statement' }, { title: 'Target Segments & JTBD', description: 'Who has this problem and what job are they trying to accomplish' }, { title: 'Competitor Landscape', description: 'Existing solutions, DIY hacks, and market gaps' }, { title: 'Pain Signals from Communities', description: 'Real quotes and complaints from Reddit, forums, and social media' }, { title: 'Opportunity Score', description: 'Data-driven assessment: demand, competition, pain intensity' }, { title: 'Actionable Recommendations', description: 'What to build, what to avoid, and how to differentiate', coming: true }] as item}
+					{#each [{ title: 'Structured Pain Hypothesis', description: 'Your vague idea transformed into a clear, testable problem statement' }, { title: 'Target Segments & JTBD', description: 'Who has this problem and what job are they trying to accomplish' }, { title: 'Competitor Landscape', description: 'Existing solutions, DIY hacks, and market gaps' }, { title: 'Pain Signals from Communities', description: 'Real quotes and complaints from Reddit, forums, and social media' }, { title: 'Opportunity Score', description: 'Data-driven assessment: demand, competition, pain intensity' }, { title: 'Actionable Recommendations', description: 'What to build, what to avoid, and how to differentiate' }] as item}
 						<div
 							class="group flex items-start gap-4 p-6 bg-base-100 border border-base-content/5 rounded-sm hover:border-primary/20 transition-colors"
 						>
@@ -386,11 +368,6 @@
 							<div class="flex-1">
 								<div class="flex items-center gap-3">
 									<h3 class="font-bold">{item.title}</h3>
-									{#if item.coming}
-										<span class="px-2 py-0.5 bg-accent/10 text-accent text-xs font-bold rounded-sm"
-											>SOON</span
-										>
-									{/if}
 								</div>
 								<p class="text-base-content/60 mt-1">{item.description}</p>
 							</div>

@@ -2,8 +2,6 @@ import type { PainApp } from '$lib/apps/pain/core';
 import type { UserApp } from '$lib/apps/user/core';
 import type { ArtifactApp } from '$lib/apps/artifact/core';
 
-import { SEARCH_LIMIT } from '$lib/apps/search/core';
-
 import type {
 	EdgeApp,
 	GenPainPdfCmd,
@@ -13,12 +11,12 @@ import type {
 	StreamChatCmd
 } from '../core';
 
-const DEFAULT_CHARGE_AMOUNT = 1;
-
-const SEARCH_QUERY_CHARGE_AMOUNT = 1 * SEARCH_LIMIT;
-
-const PDF_CHARGE_AMOUNT = 10;
-const LANDING_CHARGE_AMOUNT = 10;
+import {
+	DEFAULT_CHARGE_AMOUNT,
+	PDF_CHARGE_AMOUNT,
+	LANDING_CHARGE_AMOUNT,
+	SEARCH_APP_CHARGE_AMOUNT
+} from './constants';
 
 export class EdgeAppImpl implements EdgeApp {
 	constructor(
@@ -58,7 +56,7 @@ export class EdgeAppImpl implements EdgeApp {
 	async searchArtifacts(cmd: SearchArtifactsCmd): Promise<void> {
 		const { principal, painId, queryIds } = cmd;
 		if (!principal) throw new Error('Unauthorized');
-		if (principal.remaining <= SEARCH_QUERY_CHARGE_AMOUNT * queryIds.length)
+		if (principal.remaining <= SEARCH_APP_CHARGE_AMOUNT * queryIds.length)
 			throw new Error('Insufficient balance');
 
 		await this.artifactApp.search({
@@ -69,7 +67,7 @@ export class EdgeAppImpl implements EdgeApp {
 
 		await this.userApp.charge({
 			subId: principal.sub.id,
-			amount: SEARCH_QUERY_CHARGE_AMOUNT * queryIds.length
+			amount: SEARCH_APP_CHARGE_AMOUNT * queryIds.length
 		});
 	}
 

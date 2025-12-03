@@ -18,6 +18,7 @@
 	import { painsStore, PainCard, painApi } from '$lib/apps/pain/client';
 	import { SearchQueriesWidget, searchQueriesStore } from '$lib/apps/search/client';
 	import { ArtifactsWidget, artifactsStore } from '$lib/apps/artifact/client';
+	import { PDF_CHARGE_AMOUNT, LANDING_CHARGE_AMOUNT } from '$lib/apps/edge/app';
 	import {
 		PainsStatusOptions,
 		ArtifactsTypeOptions,
@@ -316,7 +317,7 @@
 	<p>Generating a PDF report for your pain. This may take a few minutes.</p>
 	<div class="modal-action">
 		<Button variant="ghost" onclick={() => (pdfModalOpen = false)}>Cancel</Button>
-		<Button variant="solid" onclick={() => genPdf()}>Generate</Button>
+		<Button variant="solid" onclick={() => genPdf()}>Generate ({PDF_CHARGE_AMOUNT} credits)</Button>
 	</div>
 </Modal>
 
@@ -325,6 +326,8 @@
 	<p>Generating a landing page for your pain. This may take a few minutes.</p>
 	<div class="modal-action">
 		<Button variant="ghost" onclick={() => (landingModalOpen = false)}>Cancel</Button>
-		<Button variant="solid" onclick={() => genLanding()}>Generate</Button>
+		<Button variant="solid" onclick={() => genLanding()}
+			>Generate ({LANDING_CHARGE_AMOUNT} credits)</Button
+		>
 	</div>
 </Modal>
