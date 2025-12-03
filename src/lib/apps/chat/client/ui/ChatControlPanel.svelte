@@ -144,7 +144,8 @@
 							href={pb.files.getURL(pain, pain.report)}
 							disabled={pdfGenerating}
 							size="sm"
-							variant="ghost"
+							variant="soft"
+							color="success"
 							onclick={() => (pdfModalOpen = true)}
 						>
 							<File size={16} />
@@ -168,7 +169,8 @@
 							href={`/pages/${pain.id}`}
 							disabled={landingGenerating}
 							size="sm"
-							variant="ghost"
+							variant="soft"
+							color="success"
 						>
 							<Landmark size={16} />
 							View Landing

@@ -55,7 +55,7 @@ export class PreparatorImpl {
 	): Promise<string> {
 		let knowledge = '';
 
-		const status = mode === 'validation' ? PainsStatusOptions.validation : undefined;
+		const status = mode === 'discovery' ? undefined : PainsStatusOptions.validation;
 		const pains = await this.crud.getByChatId(chatId, status);
 		knowledge += pains
 			.map((pain) => {

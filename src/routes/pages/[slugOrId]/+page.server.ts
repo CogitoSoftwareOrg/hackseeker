@@ -6,5 +6,5 @@ export const load = async ({ params }) => {
 	const htmlUrl = pb.files.getURL(pain, pain.landing);
 	const htmlContent = await fetch(htmlUrl).then((res) => res.text());
 	console.log('htmlContent', htmlContent);
-	return { htmlContent };
+	return { htmlContent, painId: pain.id };
 };
