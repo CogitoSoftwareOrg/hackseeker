@@ -4,7 +4,7 @@ import { grok, LLMS } from '$lib/shared/server';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 
-const MAX_LOOP_ITERATIONS = 5;
+const MAX_LOOP_ITERATIONS = 1;
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const llm = grok;
 
