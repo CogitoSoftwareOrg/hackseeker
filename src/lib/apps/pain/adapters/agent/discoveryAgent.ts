@@ -9,7 +9,7 @@ import {
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
-const MAX_LOOP_ITERATIONS = 5;
+const MAX_LOOP_ITERATIONS = 1;
 const llm = grok;
 
 export const DISCOVERY_PROMPT = `
@@ -123,6 +123,7 @@ export class DiscoveryAgent implements Agent {
 		dynamicArgs: Record<string, unknown>,
 		tools: Tool[]
 	): Promise<void> {
+		// const createPainTool = tools.find((t) => t.schema.function.name === 'createPain');
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
 			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,

@@ -12,6 +12,7 @@ export class PainCrudImpl implements PainCrud {
 	constructor() {}
 
 	async getByChatId(chatId: string, status?: PainsStatusOptions): Promise<Pain[]> {
+		console.log('getByChatId', chatId, status);
 		const recs: PainsResponse<PainKeywords, PainMetrics>[] = await pb
 			.collection(Collections.Pains)
 			.getFullList({

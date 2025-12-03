@@ -183,7 +183,7 @@ Artifact payload: ${JSON.stringify(artifact.data.payload)}
 			}
 		});
 		return await pb.collection(Collections.Artifacts).getFullList({
-			filter: `userId = "${userId}" && id ?= "${res.hits.map((hit) => hit.id).join(',')}"`
+			filter: `pain.user = "${userId}" && id ?= "${res.hits.map((hit) => hit.id).join(',')}"`
 		});
 	}
 }

@@ -1,5 +1,6 @@
 import { Collections, pb, type Create, type Update } from '$lib';
 import type { MessageChunk } from '$lib/apps/chat/core';
+import type { AskMode } from '$lib/apps/pain/core';
 
 import { messagesStore } from './messages.svelte.ts';
 
@@ -16,12 +17,12 @@ class ChatApi {
 		return chat;
 	}
 
-	async sendMessage(dto: Create<Collections.Messages>) {
+	async sendMessage(dto: Create<Collections.Messages>, mode: AskMode) {
 		if (!dto.content) throw new Error('Content is required');
 
 		messagesStore.addOptimisticMessage(dto);
 
-		const es = new EventSource(`/api/chats/${dto.chat}/sse?q=${encodeURIComponent(dto.content)}`, {
+		const es = new EventSource(`/api/chats/${dto.chat}/sse?q=${encodeURIComponent(dto.content)}&mode=${mode}`, {
 			withCredentials: true
 		});
 

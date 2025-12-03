@@ -25,12 +25,15 @@
 
 	async function handleSend(content: string) {
 		if (!chat) return;
-		await chatApi.sendMessage({
-			chat: chat.id,
-			role: MessagesRoleOptions.user,
-			status: MessagesStatusOptions.final,
-			content
-		});
+		await chatApi.sendMessage(
+			{
+				chat: chat.id,
+				role: MessagesRoleOptions.user,
+				status: MessagesStatusOptions.final,
+				content
+			},
+			chat.pain ? 'validation' : 'discovery'
+		);
 	}
 </script>
 

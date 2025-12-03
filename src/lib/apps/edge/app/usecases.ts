@@ -85,7 +85,7 @@ export class EdgeAppImpl implements EdgeApp {
 
 	async streamChat(cmd: StreamChatCmd): Promise<ReadableStream> {
 		console.log('edge.streamChat');
-		const { principal, chatId, query } = cmd;
+		const { principal, chatId, query, mode } = cmd;
 		if (!principal) throw new Error('Unauthorized');
 		if (principal.remaining <= 0) throw new Error('Insufficient balance');
 
@@ -103,7 +103,7 @@ export class EdgeAppImpl implements EdgeApp {
 
 				try {
 					const stream = await painApp.askStream({
-						mode: cmd.mode,
+						mode,
 						userId: principal.user.id,
 						chatId,
 						query
