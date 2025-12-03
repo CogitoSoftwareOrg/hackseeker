@@ -34,9 +34,6 @@ export class PreparatorImpl {
 		userMsg: MessagesResponse | null;
 		knowledge: string;
 	}> {
-		const history = await this.chatApp.getHistory(chatId, HISTORY_TOKENS);
-		const knowledge = await this.buildKnowledge(mode, userId, chatId, query);
-
 		let msgs: { aiMsg: MessagesResponse | null; userMsg: MessagesResponse | null } = {
 			aiMsg: null,
 			userMsg: null
@@ -44,6 +41,10 @@ export class PreparatorImpl {
 		if (withMessages) {
 			msgs = await this.chatApp.prepareMessages(chatId, query);
 		}
+
+		const history = await this.chatApp.getHistory(chatId, HISTORY_TOKENS);
+		const knowledge = await this.buildKnowledge(mode, userId, chatId, query);
+
 		return { history, aiMsg: msgs.aiMsg, userMsg: msgs.userMsg, knowledge };
 	}
 

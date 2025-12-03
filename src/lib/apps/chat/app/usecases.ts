@@ -8,7 +8,7 @@ import {
 	ChatsStatusOptions,
 	type Update
 } from '$lib/shared';
-import { LLMS, TOKENIZERS } from '$lib/shared/server';
+import { LLMS, TOKENIZERS, type Agent } from '$lib/shared/server';
 
 import {
 	Chat,
@@ -17,11 +17,15 @@ import {
 	type ChatEventMemoryPutCmd,
 	type ChatEventMemory,
 	type ChatEventMemoryGetCmd,
-	type OpenAIMessage
+	type OpenAIMessage,
+	type UtilsMode
 } from '../core';
 
 export class ChatAppImpl implements ChatApp {
-	constructor(private readonly chatEventIndexer: ChatEventIndexer) {}
+	constructor(
+		private readonly agents: Record<UtilsMode, Agent>,
+		private readonly chatEventIndexer: ChatEventIndexer
+	) {}
 
 	async getMemories(cmd: ChatEventMemoryGetCmd): Promise<ChatEventMemory[]> {
 		return this.chatEventIndexer.search(cmd.query, cmd.tokens, cmd.chatId);
@@ -41,6 +45,8 @@ export class ChatAppImpl implements ChatApp {
 		const chat = await this.getChat(chatId);
 
 		if (chat.data.status === ChatsStatusOptions.empty) {
+			this.nameChat(chatId, query);
+
 			await pb.collection(Collections.Chats).update(chatId, {
 				status: ChatsStatusOptions.going
 			});
@@ -107,5 +113,18 @@ export class ChatAppImpl implements ChatApp {
 
 		messages.reverse();
 		return messages;
+	}
+
+	private async nameChat(chatId: string, query: string): Promise<void> {
+		const name = await this.agents['name'].run({
+			history: [{ role: 'user', content: query }],
+			knowledge: '',
+			tools: [],
+			dynamicArgs: {}
+		});
+
+		await pb.collection(Collections.Chats).update(chatId, {
+			title: name
+		});
 	}
 }

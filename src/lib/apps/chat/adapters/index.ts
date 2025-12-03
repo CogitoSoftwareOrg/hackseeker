@@ -1,1 +1,2 @@
-export { MeiliChatEventIndexer } from './chatEventIndexer';
+export * from './agent';
+export * from './chatEventIndexer';

@@ -47,6 +47,8 @@ export enum Importance {
 	High = 'high'
 }
 
+export type UtilsMode = 'name';
+
 export type ChatEventMemory = {
 	type: EventType;
 	content: string;
