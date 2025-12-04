@@ -13,6 +13,9 @@ You are an expert content analyzer. Your task is to extract structured informati
 
 Given a markdown document from a web page, extract the following:
 
+[KNOWLEDGE]
+{KNOWLEDGE}
+
 1. **Quotes**: Direct quotes from real users expressing frustrations, complaints, or pain points. Include the author if identifiable.
 2. **Insights**: Key observations about problems, market trends, or user behavior patterns.
 3. **Competitors**: Existing tools, products, or solutions mentioned that address similar problems. Include their names, descriptions, and links if available.
@@ -33,7 +36,10 @@ function stripMarkdownCodeBlocks(content: string): string {
 }
 
 export class SimpleExtractor implements Extractor {
-	async extract(markdown: string): Promise<z.infer<typeof ExtractorResultSchema>> {
+	async extract(
+		markdown: string,
+		knowledge: string
+	): Promise<z.infer<typeof ExtractorResultSchema>> {
 		if (!markdown || markdown.trim().length === 0) {
 			console.log('Empty markdown content, skipping extraction');
 			return {
@@ -53,7 +59,7 @@ export class SimpleExtractor implements Extractor {
 			const res = await openai.chat.completions.create({
 				model: EXTRACTOR_MODEL,
 				messages: [
-					{ role: 'system', content: EXTRACTOR_SYSTEM_PROMPT },
+					{ role: 'system', content: EXTRACTOR_SYSTEM_PROMPT.replace('{KNOWLEDGE}', knowledge) },
 					{
 						role: 'user',
 						content: `Extract structured information from this web content:\n\n${truncatedMarkdown}`

@@ -120,8 +120,12 @@
 			{/if}
 
 			{#if mode === 'validation'}
-				<Button target="_blank" size="sm" variant="soft" href="https://cogitosoftware.nl/mvp-offer"
-					>Build MVP in a 7 days</Button
+				<Button
+					target="_blank"
+					size="sm"
+					variant="soft"
+					href="https://cogitosoftware.nl/mvp-offer"
+					class="hidden md:block">Build MVP in a 7 days</Button
 				>
 			{/if}
 		</div>

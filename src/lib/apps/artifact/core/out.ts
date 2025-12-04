@@ -42,7 +42,7 @@ export const ExtractorResultSchema = z.object({
 });
 
 export interface Extractor {
-	extract(content: string): Promise<z.infer<typeof ExtractorResultSchema>>;
+	extract(content: string, knowledge: string): Promise<z.infer<typeof ExtractorResultSchema>>;
 }
 
 export interface ArtifactIndexer {

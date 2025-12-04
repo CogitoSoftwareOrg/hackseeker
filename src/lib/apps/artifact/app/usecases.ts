@@ -53,7 +53,7 @@ export class ArtifactAppImpl implements ArtifactApp {
 
 		const artifacts = await Promise.all(
 			dtos.map(async (dto) => {
-				const result = await this.extractor.extract(dto.markdown);
+				const result = await this.extractor.extract(dto.markdown, '');
 				const artifacts = await this.parseArtifacts(painId, queryId, dto, result);
 				await this.artifactIndexer.add(userId, artifacts);
 				return artifacts;
