@@ -1,9 +1,10 @@
-import { error, type RequestHandler } from '@sveltejs/kit';
+import { startActiveObservation, propagateAttributes } from '@langfuse/tracing';
+import { error } from '@sveltejs/kit';
 
-import { withTracing, streamWithFlush } from '$lib/shared/server';
+import { streamWithTracing } from '$lib/shared/server/tracing';
 import type { AskMode } from '$lib/apps/pain/core';
 
-const handler: RequestHandler = async ({ params, url, locals }) => {
+export const GET = async ({ params, url, locals }) => {
 	const { chatId } = params;
 	const mode = (url.searchParams.get('mode') as AskMode) ?? 'discovery';
 
@@ -13,30 +14,37 @@ const handler: RequestHandler = async ({ params, url, locals }) => {
 	if (!chatId) throw error(400, 'Missing required parameters');
 
 	const edge = locals.di.edge;
+	const principal = locals.principal;
 
-	const stream = await edge.streamChat({
-		mode,
-		principal: locals.principal,
-		chatId,
-		query
-	});
+	return await startActiveObservation('chat-sse', async () => {
+		return await propagateAttributes(
+			{
+				userId: principal.user.id,
+				sessionId: chatId,
+				metadata: {
+					chatId,
+					mode,
+					query
+				}
+			},
+			async () => {
+				const stream = await edge.streamChat({
+					mode,
+					principal,
+					chatId,
+					query
+				});
 
-	return new Response(streamWithFlush(stream), {
-		headers: {
-			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive'
-		}
+				const wrappedStream = streamWithTracing(stream);
+
+				return new Response(wrappedStream, {
+					headers: {
+						'Content-Type': 'text/event-stream',
+						'Cache-Control': 'no-cache',
+						Connection: 'keep-alive'
+					}
+				});
+			}
+		);
 	});
 };
-
-export const GET = withTracing(handler, {
-	traceName: 'chat-sse',
-	updateTrace: ({ params, locals }) => ({
-		userId: locals.principal?.user?.id,
-		sessionId: params.chatId,
-		metadata: {
-			chatId: params.chatId
-		}
-	})
-});

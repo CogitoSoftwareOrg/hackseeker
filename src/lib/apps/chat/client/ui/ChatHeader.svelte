@@ -125,7 +125,7 @@
 					size="sm"
 					variant="soft"
 					href="https://cogitosoftware.nl/mvp-offer"
-					class="hidden md:block">Build MVP in a 7 days</Button
+					class="hidden md:flex">Build MVP in a 7 days</Button
 				>
 			{/if}
 		</div>

@@ -1,8 +1,6 @@
-import { error, type RequestHandler } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 
-import { withTracing } from '$lib/shared/server';
-
-const handler: RequestHandler = async ({ params, locals, request }) => {
+export const PUT = async ({ params, locals, request }) => {
 	const { painId } = params;
 	const body = await request.json();
 	const { chatId } = body;
@@ -24,14 +22,3 @@ const handler: RequestHandler = async ({ params, locals, request }) => {
 		}
 	});
 };
-
-export const PUT = withTracing(handler, {
-	traceName: 'start-pain-validation',
-	updateTrace: ({ params, locals }) => ({
-		userId: locals.principal?.user?.id,
-		sessionId: params.painId,
-		metadata: {
-			painId: params.painId
-		}
-	})
-});

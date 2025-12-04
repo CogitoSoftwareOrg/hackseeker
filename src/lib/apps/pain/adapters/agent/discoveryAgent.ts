@@ -7,7 +7,10 @@ import {
 } from '$lib/shared/server';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
+import { observe } from '@langfuse/tracing';
 
+const OBSERVATION_NAME = 'discovery-agent';
+const OBSERVATION_TYPE = 'agent';
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 1;
 const llm = grok;
@@ -71,58 +74,77 @@ Unless explicitly overridden, respond using the following structure:
 export class DiscoveryAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
-	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, tools, history, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	run = observe(
+		async (cmd: AgentRunCmd): Promise<string> => {
+			const { dynamicArgs, tools, history, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+			// Run tool loop
+			const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+			if (result) return result;
 
-		// Final response (no tools)
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: false
-		});
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: false
+			});
 
-		const content = res.choices[0].message.content || '';
-		history.push({ role: 'assistant', content });
+			const content = res.choices[0].message.content || '';
+			history.push({ role: 'assistant', content });
 
-		return content;
-	}
+			return content;
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
+		}
+	);
 
-	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, tools, history, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	runStream = observe(
+		async (cmd: AgentRunCmd): Promise<ReadableStream> => {
+			const { dynamicArgs, tools, history, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop first (not streamed)
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
-
-		// Stream only the final response
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: true
-		});
-
-		return new ReadableStream({
-			async start(controller) {
-				for await (const chunk of res) {
-					const delta = chunk.choices[0]?.delta;
-					if (delta?.content) {
-						controller.enqueue(delta.content);
+			const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+			if (result) {
+				return new ReadableStream({
+					async start(controller) {
+						controller.enqueue(result);
+						controller.close();
 					}
-				}
-				controller.close();
+				});
 			}
-		});
-	}
+
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: true,
+				stream_options: { include_usage: true }
+			});
+			return new ReadableStream({
+				async start(controller) {
+					for await (const chunk of res) {
+						const delta = chunk.choices[0]?.delta;
+						if (delta?.content) {
+							controller.enqueue(delta.content);
+						}
+					}
+					controller.close();
+				}
+			});
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
+		}
+	);
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
 		dynamicArgs: Record<string, unknown>,
 		tools: Tool[]
-	): Promise<void> {
+	): Promise<string> {
+		let result = '';
 		// const createPainTool = tools.find((t) => t.schema.function.name === 'createPain');
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
 			const res = await llm.chat.completions.create({
@@ -147,6 +169,7 @@ export class DiscoveryAgent implements Agent {
 
 			// No tool calls = done with loop
 			if (toolCalls.length === 0) {
+				result = message.content || '';
 				break;
 			}
 
@@ -169,6 +192,7 @@ export class DiscoveryAgent implements Agent {
 				});
 			}
 		}
+		return result;
 	}
 
 	private buildMessages(

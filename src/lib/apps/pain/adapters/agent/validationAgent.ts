@@ -68,19 +68,16 @@ export class ValidationAgent implements Agent {
 		const { dynamicArgs, history, tools, knowledge } = cmd;
 		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		if (result) return result;
 
-		// Final response (no tools)
 		const res = await llm.chat.completions.create({
 			model: AGENT_MODEL,
 			messages,
 			stream: false
 		});
-
 		const content = res.choices[0].message.content || '';
 		history.push({ role: 'assistant', content });
-
 		return content;
 	}
 
@@ -89,7 +86,15 @@ export class ValidationAgent implements Agent {
 		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
 		// Run tool loop first (not streamed)
-		await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+		if (result) {
+			return new ReadableStream({
+				async start(controller) {
+					controller.enqueue(result);
+					controller.close();
+				}
+			});
+		}
 
 		// Stream only the final response
 		const res = await llm.chat.completions.create({
@@ -115,7 +120,8 @@ export class ValidationAgent implements Agent {
 		workflowMessages: ChatCompletionMessageParam[],
 		dynamicArgs: Record<string, unknown>,
 		tools: Tool[]
-	): Promise<void> {
+	): Promise<string> {
+		let result = '';
 		for (let i = 0; i < MAX_LOOP_ITERATIONS; i++) {
 			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
@@ -139,6 +145,7 @@ export class ValidationAgent implements Agent {
 
 			// No tool calls = done with loop
 			if (toolCalls.length === 0) {
+				result = message.content || '';
 				break;
 			}
 
@@ -161,6 +168,8 @@ export class ValidationAgent implements Agent {
 				});
 			}
 		}
+
+		return result;
 	}
 
 	private buildMessages(

@@ -1,89 +1,49 @@
-import { observe, updateActiveTrace, propagateAttributes } from '@langfuse/tracing';
-import { langfuseSpanProcessor } from './instrumentation';
-import type { RequestHandler, RequestEvent } from '@sveltejs/kit';
+import { updateActiveTrace } from '@langfuse/tracing';
 
-/**
- * Wraps a streaming response to automatically flush Langfuse traces after completion
- */
-export function streamWithFlush(stream: ReadableStream): ReadableStream {
+export function streamWithTracing(
+	stream: ReadableStream,
+	options?: {
+		updateInterval?: number; // Update metadata every N chunks (default: 10)
+		onChunk?: (chunkCount: number) => Record<string, unknown>; // Custom metadata per chunk
+		onComplete?: (chunkCount: number) => Record<string, unknown>; // Custom metadata on completion
+		onError?: (error: unknown) => Record<string, unknown>; // Custom metadata on error
+	}
+): ReadableStream {
+	const updateInterval = options?.updateInterval ?? 10;
+
 	return new ReadableStream({
 		async start(controller) {
 			const reader = stream.getReader();
+			let chunkCount = 0;
 
 			try {
 				while (true) {
-					const { done, value } = await reader.read();
+					const { value, done } = await reader.read();
 					if (done) break;
+
+					chunkCount++;
+					if (chunkCount % updateInterval === 0) {
+						const metadata = options?.onChunk ? options.onChunk(chunkCount) : { chunkCount };
+						updateActiveTrace({ metadata });
+					}
+
 					controller.enqueue(value);
 				}
 				controller.close();
 			} catch (error) {
 				controller.error(error);
+				const errorMetadata = options?.onError
+					? options.onError(error)
+					: { error: error instanceof Error ? error.message : 'Unknown error' };
+				updateActiveTrace({ metadata: errorMetadata });
 			} finally {
 				reader.releaseLock();
-				await langfuseSpanProcessor.forceFlush();
+				// Update trace with final metadata after stream completes
+				const finalMetadata = options?.onComplete
+					? options.onComplete(chunkCount)
+					: { totalChunks: chunkCount };
+				updateActiveTrace({ metadata: finalMetadata });
 			}
 		}
 	});
-}
-
-/**
- * Wraps a RequestHandler with Langfuse tracing
- */
-export function withTracing(
-	handler: RequestHandler,
-	options?: {
-		traceName?: string;
-		updateTrace?: (event: RequestEvent) => {
-			userId?: string;
-			sessionId?: string;
-			metadata?: Record<string, string | undefined>;
-		};
-		endOnExit?: boolean;
-	}
-): RequestHandler {
-	return observe(
-		async (event) => {
-			if (options?.updateTrace) {
-				const traceData = options.updateTrace(event);
-				// Filter out undefined values from metadata
-				const metadata = traceData.metadata
-					? Object.fromEntries(
-							Object.entries(traceData.metadata).filter(([, v]) => v !== undefined)
-						)
-					: undefined;
-
-				// Update trace name
-				if (options.traceName) {
-					updateActiveTrace({ name: options.traceName });
-				}
-
-				// Propagate attributes to all child observations (including observeOpenAI calls)
-				// This ensures metadata, userId, sessionId are available to all nested spans
-				const attributesToPropagate: {
-					userId?: string;
-					sessionId?: string;
-					metadata?: Record<string, string>;
-				} = {};
-
-				if (traceData.userId) attributesToPropagate.userId = traceData.userId;
-				if (traceData.sessionId) attributesToPropagate.sessionId = traceData.sessionId;
-				if (metadata) attributesToPropagate.metadata = metadata as Record<string, string>;
-
-				// Use propagateAttributes to ensure all child observations inherit these attributes
-				if (Object.keys(attributesToPropagate).length > 0) {
-					return await propagateAttributes(attributesToPropagate, async () => {
-						return handler(event);
-					});
-				}
-			} else if (options?.traceName) {
-				updateActiveTrace({ name: options.traceName });
-			}
-
-			return handler(event);
-		},
-		{
-			endOnExit: options?.endOnExit ?? false
-		}
-	);
 }

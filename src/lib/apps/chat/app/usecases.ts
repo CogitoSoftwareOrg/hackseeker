@@ -9,6 +9,7 @@ import {
 	type Update
 } from '$lib/shared';
 import { LLMS, TOKENIZERS, type Agent } from '$lib/shared/server';
+import { getActiveTraceId } from '@langfuse/tracing';
 
 import {
 	Chat,
@@ -42,6 +43,8 @@ export class ChatAppImpl implements ChatApp {
 		await this.chatEventIndexer.add(memories);
 	}
 	async prepareMessages(chatId: string, query: string) {
+		const traceId = getActiveTraceId();
+
 		const chat = await this.getChat(chatId);
 
 		if (chat.data.status === ChatsStatusOptions.empty) {
@@ -56,14 +59,20 @@ export class ChatAppImpl implements ChatApp {
 			chat: chatId,
 			role: MessagesRoleOptions.user,
 			content: query,
-			status: MessagesStatusOptions.final
+			status: MessagesStatusOptions.final,
+			metadata: {
+				traceId
+			}
 		});
 
 		const aiMsg = await pb.collection(Collections.Messages).create({
 			chat: chatId,
 			role: MessagesRoleOptions.ai,
 			status: MessagesStatusOptions.streaming,
-			content: ''
+			content: '',
+			metadata: {
+				traceId
+			}
 		});
 
 		return { aiMsg, userMsg };

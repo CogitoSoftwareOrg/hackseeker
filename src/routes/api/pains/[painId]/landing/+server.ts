@@ -1,8 +1,7 @@
-import { error, type RequestHandler } from '@sveltejs/kit';
+import { propagateAttributes, startActiveObservation } from '@langfuse/tracing';
+import { error } from '@sveltejs/kit';
 
-import { withTracing } from '$lib/shared/server';
-
-const handler: RequestHandler = async ({ params, locals, request }) => {
+export const POST = async ({ params, locals, request }) => {
 	const { painId } = params;
 	const body = await request.json();
 	const { chatId } = body;
@@ -12,26 +11,26 @@ const handler: RequestHandler = async ({ params, locals, request }) => {
 	if (!chatId) throw error(400, 'Missing required parameters');
 
 	const edge = locals.di.edge;
+	const principal = locals.principal;
 
-	const result = await edge.genPainLanding({
-		principal: locals.principal,
-		painId,
-		chatId
-	});
-	return new Response(JSON.stringify(result), {
-		headers: {
-			'Content-Type': 'application/json'
-		}
+	return await startActiveObservation('gen-pain-landing', async () => {
+		return await propagateAttributes(
+			{
+				userId: principal.user.id,
+				sessionId: chatId
+			},
+			async () => {
+				const result = await edge.genPainLanding({
+					principal,
+					painId,
+					chatId
+				});
+				return new Response(JSON.stringify(result), {
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
+			}
+		);
 	});
 };
-
-export const POST = withTracing(handler, {
-	traceName: 'generate-pain-landing',
-	updateTrace: ({ params, locals }) => ({
-		userId: locals.principal?.user?.id,
-		sessionId: params.painId,
-		metadata: {
-			painId: params.painId
-		}
-	})
-});

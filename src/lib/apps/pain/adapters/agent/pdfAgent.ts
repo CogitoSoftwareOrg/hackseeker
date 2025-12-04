@@ -6,7 +6,10 @@ import {
 	// openai,
 	LLMS
 } from '$lib/shared/server';
+import { observe } from '@langfuse/tracing';
 
+const OBSERVATION_NAME = 'pdf-agent-run';
+const OBSERVATION_TYPE = 'agent';
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const MAX_LOOP_ITERATIONS = 5;
 const llm = grok;
@@ -483,54 +486,66 @@ Do NOT wrap the HTML in Markdown code fences, quotes, or any extra explanation.
 export class PdfAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
-	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, tools, history, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	run = observe(
+		async (cmd: AgentRunCmd): Promise<string> => {
+			const { dynamicArgs, tools, history, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop
-		const loopTools = [...tools, ...this.tools];
-		if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
+			// Run tool loop
+			const loopTools = [...tools, ...this.tools];
+			if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
 
-		// Final response (no tools)
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: false
-		});
+			// Final response (no tools)
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: false
+			});
 
-		const content = res.choices[0].message.content || '';
-		history.push({ role: 'assistant', content });
+			const content = res.choices[0].message.content || '';
+			history.push({ role: 'assistant', content });
 
-		return content;
-	}
+			return content;
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
+		}
+	);
 
-	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, tools, history, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	runStream = observe(
+		async (cmd: AgentRunCmd): Promise<ReadableStream> => {
+			const { dynamicArgs, tools, history, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop first (not streamed)
-		const loopTools = [...tools, ...this.tools];
-		if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
+			// Run tool loop first (not streamed)
+			const loopTools = [...tools, ...this.tools];
+			if (loopTools.length > 0) await this.runToolLoop(messages, dynamicArgs, loopTools);
 
-		// Stream only the final response
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: true
-		});
+			// Stream only the final response
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: true
+			});
 
-		return new ReadableStream({
-			async start(controller) {
-				for await (const chunk of res) {
-					const delta = chunk.choices[0]?.delta;
-					if (delta?.content) {
-						controller.enqueue(delta.content);
+			return new ReadableStream({
+				async start(controller) {
+					for await (const chunk of res) {
+						const delta = chunk.choices[0]?.delta;
+						if (delta?.content) {
+							controller.enqueue(delta.content);
+						}
 					}
+					controller.close();
 				}
-				controller.close();
-			}
-		});
-	}
+			});
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
+		}
+	);
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
