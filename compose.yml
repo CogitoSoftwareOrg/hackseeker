@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - ENV=production
+      - ENV=${ENV:-production}
       - PUBLIC_PB_URL=${PUBLIC_PB_URL:-https://mvp-pb.cogitosoftware.nl}
       - MEILI_URL=${MEILI_URL:-https://mvp-meili.cogitosoftware.nl}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-ec076b61-09a8-40d4-9857-8bce360e67e0}

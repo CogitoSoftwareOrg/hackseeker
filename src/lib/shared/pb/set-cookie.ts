@@ -1,7 +1,6 @@
 import { pb } from './pb';
 
-// const DOMAIN = 'cogitosoftware.nl';
-const DOMAIN = 'quizbee.academy';
+const DOMAIN = 'hackseeker.com';
 
 export function setPBCookie() {
 	const host = typeof window !== 'undefined' ? window.location.hostname : '';

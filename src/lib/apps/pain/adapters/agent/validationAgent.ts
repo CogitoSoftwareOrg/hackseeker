@@ -1,9 +1,12 @@
+import { observe } from '@langfuse/tracing';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 import { grok, LLMS } from '$lib/shared/server';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 
+const OBSERVATION_NAME = 'validation-agent-run';
+const OBSERVATION_TYPE = 'agent';
 const MAX_LOOP_ITERATIONS = 1;
 const AGENT_MODEL = LLMS.GROK_4_1_FAST;
 const llm = grok;
@@ -12,6 +15,50 @@ export const VALIDATION_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]
 You are a search query assistant for market validation research.
 Your primary purpose is to help users find specific search queries to validate a business problem.
+
+[IMPORTANT VIBE]
+4 MOST COMMON MISTAKES:
+   - Not Solving a Real Problem
+   - Getting Stuck in a Tarpit Idea
+   - Not Evaluating an Idea
+   - Waiting for the Perfect Idea
+
+10 KEY QUESTIONS TO ASK ABOUT A STARTUP:
+   - Do you have Founder Market Fit? (pick a good idea for your team)
+   - How big is the Market?
+   - How accute is it problem? (does someone care about it?)
+   - Do you have competition? (most good startup ideas have competition)
+   - Do you want the product?
+   - Did this recently become possible or necessary?
+   - Are there good proxies for this business? (not a direct competitor)
+   - Is this an idea you want to work for years? 
+   - Is this an scalable business?
+   - Is this a good idea space? (with good future hit rate)
+
+3 THINGS THAT MAKE YOUR STARTUP IDEA GOOD (although they might seem bad):
+   - Ideas that are hard to get started (hard ideas usually imply oportunities just sitting there to be taken)
+   - Ideas that are in a boring space (boring ideas have a much higher hit rate than fun ideas)
+   - Ideas that have market competitors (specially good if they suck)
+
+HOW TO COME UP WITH STARTUP IDEAS:
+   - Become an expert on something valuable
+   - Work at a startup
+   - Build things you find interesting
+
+7 RECIPES FOR GENERATING STARTUP IDEAS:
+   - Start with what your team is good at (authomatic Founder Market Fit)
+
+   - Start with a problem you personally have encountered
+          --> Look into your life and professional experiences for startup ideas
+   - Think of things you personally wish existed (careful with tarpit ideas)
+
+   - Look for things in the world that have changed recently
+
+   - Look for new variants of successful companies
+
+   - Talk to people and ask them what problems they have (potentially in fertile ideas spaces)
+
+   - Look for big industries that look broken
 
 [BEHAVIORAL PRINCIPLES]
 Follow these behavioral principles:
@@ -64,57 +111,69 @@ Unless explicitly overridden, respond using the following structure:
 export class ValidationAgent implements Agent {
 	constructor(public readonly tools: Tool[]) {}
 
-	async run(cmd: AgentRunCmd): Promise<string> {
-		const { dynamicArgs, history, tools, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	run = observe(
+		async (cmd: AgentRunCmd): Promise<string> => {
+			const { dynamicArgs, history, tools, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
-		if (result) return result;
+			const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+			if (result) return result;
 
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: false
-		});
-		const content = res.choices[0].message.content || '';
-		history.push({ role: 'assistant', content });
-		return content;
-	}
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: false
+			});
+			const content = res.choices[0].message.content || '';
+			history.push({ role: 'assistant', content });
+			return content;
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
+		}
+	);
 
-	async runStream(cmd: AgentRunCmd): Promise<ReadableStream> {
-		const { dynamicArgs, history, tools, knowledge } = cmd;
-		const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
+	runStream = observe(
+		async (cmd: AgentRunCmd): Promise<ReadableStream> => {
+			const { dynamicArgs, history, tools, knowledge } = cmd;
+			const messages = this.buildMessages(history as ChatCompletionMessageParam[], knowledge);
 
-		// Run tool loop first (not streamed)
-		const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
-		if (result) {
+			// Run tool loop first (not streamed)
+			const result = await this.runToolLoop(messages, dynamicArgs, [...tools, ...this.tools]);
+			if (result) {
+				return new ReadableStream({
+					async start(controller) {
+						controller.enqueue(result);
+						controller.close();
+					}
+				});
+			}
+
+			// Stream only the final response
+			const res = await llm.chat.completions.create({
+				model: AGENT_MODEL,
+				messages,
+				stream: true
+			});
+
 			return new ReadableStream({
 				async start(controller) {
-					controller.enqueue(result);
+					for await (const chunk of res) {
+						const delta = chunk.choices[0]?.delta;
+						if (delta?.content) {
+							controller.enqueue(delta.content);
+						}
+					}
 					controller.close();
 				}
 			});
+		},
+		{
+			name: OBSERVATION_NAME,
+			asType: OBSERVATION_TYPE
 		}
-
-		// Stream only the final response
-		const res = await llm.chat.completions.create({
-			model: AGENT_MODEL,
-			messages,
-			stream: true
-		});
-
-		return new ReadableStream({
-			async start(controller) {
-				for await (const chunk of res) {
-					const delta = chunk.choices[0]?.delta;
-					if (delta?.content) {
-						controller.enqueue(delta.content);
-					}
-				}
-				controller.close();
-			}
-		});
-	}
+	);
 
 	private async runToolLoop(
 		workflowMessages: ChatCompletionMessageParam[],
