@@ -2,11 +2,11 @@ import z from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
 
 import { SearchQueriesTypeOptions } from '$lib/shared';
-import { grok, LLMS } from '$lib/shared/server';
+import { llm, LLMS } from '$lib/shared/server';
 
 import { QueryGeneratorSchema, type QueryGenerator } from '../../core';
 
-const QUERY_GENERATOR_MODEL = LLMS.GROK_4_1_FAST_NON_REASONING;
+const QUERY_GENERATOR_MODEL = LLMS.GROK_4_1_NON_REASONING;
 
 const QUERY_GENERATOR_SYSTEM_PROMPT = `
 You are a market research expert. Your task is to generate strategic search queries for validating business pain points.
@@ -38,7 +38,7 @@ function stripMarkdownCodeBlocks(content: string): string {
 export class SimpleQueryGenerator implements QueryGenerator {
 	async generate(prompt: string): Promise<z.infer<typeof QueryGeneratorSchema>> {
 		try {
-			const res = await grok.chat.completions.create({
+			const res = await llm.chat.completions.create({
 				model: QUERY_GENERATOR_MODEL,
 				messages: [
 					{ role: 'system', content: QUERY_GENERATOR_SYSTEM_PROMPT },
