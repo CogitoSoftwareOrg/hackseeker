@@ -235,7 +235,7 @@
 						<!-- Metrics Widget -->
 						{@const metrics = getMetrics(pain)}
 						{#if metrics && Object.keys(metrics).length > 0}
-							<div class="rounded-lg border border-base-300 bg-base-100 p-3">
+							<div class="rounded-lg border border-base-300 bg-base-100 px-3">
 								<div class="mb-2 flex items-center gap-2 text-xs font-medium text-base-content/70">
 									<Sparkles size={12} />
 									<span>Validation Score</span>

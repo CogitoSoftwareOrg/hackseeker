@@ -8,7 +8,7 @@ import {
 	ChatsStatusOptions,
 	type Update
 } from '$lib/shared';
-import { LLMS, TOKENIZERS, type Agent } from '$lib/shared/server';
+import { countTokens, type Agent } from '$lib/shared/server';
 import { getActiveTraceId } from '@langfuse/tracing';
 
 import {
@@ -38,7 +38,7 @@ export class ChatAppImpl implements ChatApp {
 			chatId: dto.chatId,
 			content: dto.content,
 			importance: dto.importance,
-			tokens: TOKENIZERS[LLMS.GROK_4_FAST].encode(dto.content).length
+			tokens: countTokens(dto.content)
 		}));
 		await this.chatEventIndexer.add(memories);
 	}
@@ -110,7 +110,7 @@ export class ChatAppImpl implements ChatApp {
 		let totalTokens = 0;
 
 		for (const msg of reversedMessages) {
-			const msgTokens = TOKENIZERS[LLMS.GROK_4_FAST].encode(msg.content).length;
+			const msgTokens = countTokens(msg.content);
 			if (totalTokens + msgTokens > tokens) break;
 
 			totalTokens += msgTokens;

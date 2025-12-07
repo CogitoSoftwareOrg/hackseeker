@@ -1,15 +1,14 @@
 import { observe } from '@langfuse/tracing';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-import { grok, LLMS } from '$lib/shared/server';
+import { llm, LLMS } from '$lib/shared/server';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 
 const OBSERVATION_NAME = 'validation-agent-run';
 const OBSERVATION_TYPE = 'agent';
 const MAX_LOOP_ITERATIONS = 1;
-const AGENT_MODEL = LLMS.GROK_4_1_FAST;
-const llm = grok;
+const AGENT_MODEL = LLMS.GROK_4_1_REASONING;
 
 export const VALIDATION_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]

@@ -1,18 +1,13 @@
 import type { ChatCompletionMessageParam } from 'openai/resources';
 
 import type { Tool, ToolCall, Agent, AgentRunCmd } from '$lib/shared/server';
-import {
-	grok,
-	// openai,
-	LLMS
-} from '$lib/shared/server';
+import { llm, LLMS } from '$lib/shared/server';
 import { observe } from '@langfuse/tracing';
 
 const OBSERVATION_NAME = 'pdf-agent-run';
 const OBSERVATION_TYPE = 'agent';
-const AGENT_MODEL = LLMS.GROK_4_1_FAST;
+const AGENT_MODEL = LLMS.GROK_4_1_REASONING;
 const MAX_LOOP_ITERATIONS = 5;
-const llm = grok;
 
 export const PDF_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]

@@ -10,7 +10,6 @@ export function startWorker() {
 	const di = getDI();
 
 	const tick = async () => {
-		console.log('Running job worker...');
 		try {
 			await ensureAdminPb();
 
@@ -38,7 +37,6 @@ export function startWorker() {
 		}
 	};
 
-	// стартуем первый тик
 	void tick();
 }
 

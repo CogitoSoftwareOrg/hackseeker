@@ -1,19 +1,14 @@
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-
-import {
-	// openai,
-	grok,
-	LLMS
-} from '$lib/shared/server';
+import { observe } from '@langfuse/tracing';
 
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
-import { observe } from '@langfuse/tracing';
+import { llm, LLMS } from '$lib/shared/server';
+
 
 const OBSERVATION_NAME = 'discovery-agent';
 const OBSERVATION_TYPE = 'agent';
-const AGENT_MODEL = LLMS.GROK_4_1_FAST;
+const AGENT_MODEL = LLMS.GROK_4_1_REASONING;
 const MAX_LOOP_ITERATIONS = 1;
-const llm = grok;
 
 export const DISCOVERY_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]

@@ -1,8 +1,7 @@
 import { type Index, MeiliSearch, type UserProvidedEmbedder } from 'meilisearch';
 import { env } from '$env/dynamic/private';
-import { building } from '$app/environment';
 
-import { EMBEDDERS, voyage } from '$lib/shared/server';
+import { voyageEmbed } from '$lib/shared/server';
 
 import {
 	ArtifactsImportanceOptions,
@@ -48,8 +47,6 @@ export class MeiliArtifactIndexer implements ArtifactIndexer {
 	private readonly index?: Index<ArtifactDoc>;
 
 	constructor() {
-		if (building) return;
-
 		this.client = new MeiliSearch({
 			host: env.MEILI_URL,
 			apiKey: env.MEILI_MASTER_KEY
@@ -82,27 +79,11 @@ export class MeiliArtifactIndexer implements ArtifactIndexer {
 
 		console.log(`Indexing ${artifacts.length} artifacts`);
 
-		const embedTasks = [];
-		for (let i = 0; i < artifacts.length; i += BATCH_SIZE) {
-			const batch = artifacts.slice(i, i + BATCH_SIZE).map((artifact) => {
-				return `
-Artifact from: ${artifact.data.source}                
-Artifact type: ${artifact.data.type}
-Artifact payload: ${JSON.stringify(artifact.data.payload)}
-`;
-			});
-			embedTasks.push(
-				voyage.embed({
-					input: batch,
-					model: EMBEDDERS.VOYAGE_LITE,
-					inputType: 'document',
-					outputDimension: OUTPUT_DIMENSION
-				})
-			);
-		}
-		const embeddings = (await Promise.all(embedTasks))
-			.flatMap((res) => res.data)
-			.map((res) => res?.embedding);
+		const embeddings = await voyageEmbed(
+			artifacts.map((artifact) => JSON.stringify(artifact.data.payload)),
+			BATCH_SIZE,
+			OUTPUT_DIMENSION
+		);
 
 		for (let i = 0; i < artifacts.length; i++) {
 			const artifact = artifacts[i];
@@ -160,14 +141,7 @@ Artifact payload: ${JSON.stringify(artifact.data.payload)}
 		if (searchQueryId) f += ` AND searchQueryId = "${searchQueryId}"`;
 		if (type) f += ` AND type = "${type}"`;
 
-		const vector = (
-			await voyage.embed({
-				input: [query],
-				model: EMBEDDERS.VOYAGE_LITE,
-				inputType: 'document',
-				outputDimension: OUTPUT_DIMENSION
-			})
-		).data?.[0]?.embedding;
+		const vector = (await voyageEmbed([query], BATCH_SIZE, OUTPUT_DIMENSION)).at(0);
 		if (!vector) {
 			console.warn('Vector is not valid', query);
 			return [];

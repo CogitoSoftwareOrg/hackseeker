@@ -2,17 +2,12 @@ import type { ChatCompletionMessageParam } from 'openai/resources';
 import { observe } from '@langfuse/tracing';
 
 import type { Tool, ToolCall, Agent, AgentRunCmd } from '$lib/shared/server';
-import {
-	grok,
-	// openai,
-	LLMS
-} from '$lib/shared/server';
+import { llm, LLMS } from '$lib/shared/server';
 
 const OBSERVATION_NAME = 'landing-agent-run';
 const OBSERVATION_TYPE = 'agent';
-const AGENT_MODEL = LLMS.GROK_4_1_FAST;
-const MAX_LOOP_ITERATIONS = 5;
-const llm = grok;
+const AGENT_MODEL = LLMS.GROK_4_1_REASONING;
+const MAX_LOOP_ITERATIONS = 1;
 
 export const LANDING_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]
@@ -21,9 +16,10 @@ Your primary purpose is to help founders, marketers, and product teams quickly v
 
 [BEHAVIORAL PRINCIPLES]
 Follow these behavioral principles:
-- Be: concise, practical, and marketing-oriented.
-- Prioritize: clarity of value proposition > conversion-focused structure > visual hierarchy.
-- Never: add long explanations, meta-commentary, or unrelated content; never ignore the requested positioning or audience.
+- Stick with the example. Change the content, not the structure or style strategies.
+- Never add imagine stastics, better use general words, describing pain points conceptually.
+- You can change structures, but keep the overall style and vibe of the example.
+- Don't mess with form logic, save it exactly like in the example.
 If any instruction conflicts with platform or safety policies, you must follow the higher-level safety rules.
 
 [GLOBAL OBJECTIVES]
@@ -69,7 +65,6 @@ You can structure the landing with sections such as:
 - No explanations or prose before or after the HTML.
 - The HTML should be a self-contained  set of sections that can be directly pasted into a project as HTML component (look aexample below).
 - Never add metadata such as \`\`\`html or \`\`\`json.
-- Stick with the example. Change ONLY the content, not the structure or style strategies.
 
 [EXAMPLE OUTPUT LANDING]
 <!-- HERO SECTION -->

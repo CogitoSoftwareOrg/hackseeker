@@ -1,20 +1,12 @@
 import type { ChatCompletionMessageParam } from 'openai/resources';
-import {
-	observe
-	// updateActiveObservation
-} from '@langfuse/tracing';
+import { observe } from '@langfuse/tracing';
 
 import type { Agent, AgentRunCmd, Tool } from '$lib/shared/server';
-import {
-	grok,
-	// openai,
-	LLMS
-} from '$lib/shared/server';
+import { llm, LLMS } from '$lib/shared/server';
 
 const OBSERVATION_NAME = 'namer-agent';
-const OBSERVATION_TYPE = 'tool';
-const AGENT_MODEL = LLMS.GROK_4_1_FAST_NON_REASONING;
-const llm = grok;
+const OBSERVATION_TYPE = 'generation';
+const AGENT_MODEL = LLMS.GROK_4_1_NON_REASONING;
 
 export const NAMER_PROMPT = `
 [HIGH-LEVEL ROLE AND PURPOSE]

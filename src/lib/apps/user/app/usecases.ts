@@ -13,7 +13,7 @@ import type {
 	UserMemoryPutCmd
 } from '../core';
 import { Principal } from '../core';
-import { LLMS, TOKENIZERS } from '$lib/shared/server';
+import { countTokens } from '$lib/shared/server';
 
 export class UserAppImpl implements UserApp {
 	constructor(private readonly userIndexer: UserIndexer) {}
@@ -27,7 +27,7 @@ export class UserAppImpl implements UserApp {
 			userId: dto.userId,
 			content: dto.content,
 			importance: dto.importance,
-			tokens: TOKENIZERS[LLMS.GROK_4_FAST].encode(dto.content).length
+			tokens: countTokens(dto.content)
 		}));
 		await this.userIndexer.add(memories);
 	}
