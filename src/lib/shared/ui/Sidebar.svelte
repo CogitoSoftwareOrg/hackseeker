@@ -87,7 +87,7 @@
 	{#if header}
 		<div
 			class={[
-				'flex h-14 items-center border-b border-base-300 px-4',
+				'flex h-12 items-center border-b border-base-300 px-4',
 				isLeft ? 'justify-between' : 'flex-row-reverse justify-between'
 			]}
 		>
@@ -123,7 +123,7 @@
 		{#if header || showToggle}
 			<div
 				class={[
-					'flex h-16 items-center border-b border-base-300 px-2',
+					'flex h-12 items-center border-b border-base-300 px-2',
 					expanded ? 'justify-between' : 'justify-center'
 				]}
 			>

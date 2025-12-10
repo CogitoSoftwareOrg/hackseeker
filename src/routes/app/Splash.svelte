@@ -16,7 +16,7 @@
 			<div class="animate-heartbeat-glow absolute inset-0 rounded-full bg-accent/30 blur-2xl"></div>
 
 			<!-- Heart icon wrapper with animation -->
-			<div class="animate-heartbeat relative">
+			<div class="relative">
 				<span class="text-[5rem] text-primary font-bold">MVP</span>
 			</div>
 		</div>
@@ -47,22 +47,6 @@
 </div>
 
 <style>
-	@keyframes heartbeat {
-		0%,
-		100% {
-			transform: scale(1);
-		}
-		25% {
-			transform: scale(1.08);
-		}
-		50% {
-			transform: scale(1.12);
-		}
-		75% {
-			transform: scale(1.05);
-		}
-	}
-
 	@keyframes heartbeat-glow {
 		0%,
 		100% {
@@ -106,10 +90,6 @@
 		50% {
 			background-position: 100% 50%;
 		}
-	}
-
-	.animate-heartbeat {
-		animation: heartbeat 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 	}
 
 	.animate-heartbeat-glow {

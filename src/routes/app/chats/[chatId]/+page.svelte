@@ -50,7 +50,7 @@
 		</div>
 
 		<!-- Footer / Input -->
-		<footer class="shrink-0 border-t border-base-300 bg-base-100 p-2">
+		<footer class="shrink-0 border-t border-base-300 bg-base-100 p-2 pt-[0.4rem]">
 			<MessageControls {messages} onSend={handleSend} />
 		</footer>
 	</div>

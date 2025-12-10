@@ -1,0 +1,1 @@
+export { MeiliChunksIndexer } from './meiliChunksIndexer';

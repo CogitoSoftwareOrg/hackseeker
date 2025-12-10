@@ -300,7 +300,7 @@
 
 		<!-- Main Content -->
 		<main class="flex-1 overflow-hidden">
-			<div class="mx-auto h-full max-w-[1440px] p-0 md:px-4 lg:px-6">
+			<div class="h-full max-w-[1440px]">
 				{@render children()}
 			</div>
 		</main>

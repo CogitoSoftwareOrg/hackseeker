@@ -1,0 +1,1 @@
+export const NORMILIZE_CHUNK_CHAR_LIMIT = 1000;
