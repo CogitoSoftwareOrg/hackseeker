@@ -1,4 +1,4 @@
-import { SentenceSplitter, TextNode, type Metadata } from 'llamaindex';
+import { SentenceSplitter, type TextNode, type Metadata } from 'llamaindex';
 import { PDFReader } from '@llamaindex/readers/pdf';
 import { DocxReader } from '@llamaindex/readers/docx';
 import { CSVReader } from '@llamaindex/readers/csv';
