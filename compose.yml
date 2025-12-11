@@ -7,7 +7,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - ENV=${ENV:-production}
-      - PUBLIC_PB_URL=${PUBLIC_PB_URL:-https://mvp-pb.cogitosoftware.nl}
+      - PUBLIC_POSTHOG_TOKEN=${PUBLIC_POSTHOG_TOKEN:-phc_oWXLqTi4LOraqGCjzyhWvNKUXSRg774cnKONPVZPlpm}
+      - PUBLIC_POSTHOG_URL=${PUBLIC_POSTHOG_URL:-https://eu.i.posthog.com}
       - MEILI_URL=${MEILI_URL:-https://mvp-meili.cogitosoftware.nl}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-pk-lf-ec076b61-09a8-40d4-9857-8bce360e67e0}
       - LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL:-https://us.cloud.langfuse.com}
