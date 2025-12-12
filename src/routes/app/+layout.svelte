@@ -10,9 +10,12 @@
 	import { Button, Modal, ThemeController, AuthWall, Paywall, Sidebar } from '$lib/shared/ui';
 	import { ChatsStatusOptions, PainsStatusOptions } from '$lib';
 
-	import Splash from './Splash.svelte';
 	import { painsStore } from '$lib/apps/pain/client';
 	import type { AskMode } from '$lib/apps/pain/core';
+
+	import UpdateApp from './UpdateApp.svelte';
+	import Splash from './Splash.svelte';
+	import { onMount } from 'svelte';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
@@ -22,8 +25,8 @@
 	const sidebarOpen = $derived(uiStore.sidebarOpen);
 	const sidebarExpanded = $derived(uiStore.sidebarExpanded);
 
-	const mobile = new MediaQuery('(max-width: 768px)');
-	let layoutContainer: HTMLDivElement | undefined = $state();
+	const mobile = $derived(new MediaQuery('(max-width: 768px)'));
+	let layoutContainer: HTMLDivElement | null = $state(null);
 
 	const chats = $derived(chatsStore.chats);
 	const hasMoreChats = $derived(chatsStore.page < chatsStore.totalPages);
@@ -104,6 +107,30 @@
 	function isActive(path: string) {
 		return page.url.pathname === path;
 	}
+
+	// Handle viewport changes on mobile to prevent layout shift when keyboard opens
+	onMount(() => {
+		if (typeof window === 'undefined' || !window.visualViewport) return;
+
+		const handleResize = () => {
+			// Only update layout if it's a chat page and the container is available
+			if (!layoutContainer || !window.visualViewport || !isChatPage) return;
+
+			if (mobile.current) {
+				layoutContainer.style.height = `${window.visualViewport.height}px`;
+			} else {
+				layoutContainer.style.height = '';
+			}
+		};
+
+		handleResize();
+
+		window.visualViewport.addEventListener('resize', handleResize);
+
+		return () => {
+			window.visualViewport?.removeEventListener('resize', handleResize);
+		};
+	});
 
 	let loading = $state(false);
 	async function handleNewChat() {
@@ -285,6 +312,7 @@
 	<Splash />
 {:then}
 	<div
+		bind:this={layoutContainer}
 		class="flex h-screen flex-col overflow-hidden bg-base-100 md:flex-row"
 		use:swipeable={{
 			isOpen: sidebarOpen ?? false,
@@ -366,3 +394,5 @@
 >
 	<FeedbackForm />
 </Modal>
+
+<UpdateApp />
