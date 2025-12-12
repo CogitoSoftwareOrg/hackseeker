@@ -4,7 +4,6 @@ import { observe } from '@langfuse/tracing';
 import type { Agent, AgentRunCmd, Tool, ToolCall } from '$lib/shared/server';
 import { llm, LLMS } from '$lib/shared/server';
 
-
 const OBSERVATION_NAME = 'discovery-agent';
 const OBSERVATION_TYPE = 'agent';
 const AGENT_MODEL = LLMS.GROK_4_1_REASONING;
@@ -125,7 +124,9 @@ export class DiscoveryAgent implements Agent {
 			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
 				messages,
-				stream: false
+				stream: false,
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 
 			const content = res.choices[0].message.content || '';
@@ -158,7 +159,9 @@ export class DiscoveryAgent implements Agent {
 				model: AGENT_MODEL,
 				messages,
 				stream: true,
-				stream_options: { include_usage: true }
+				stream_options: { include_usage: true },
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 			return new ReadableStream({
 				async start(controller) {
@@ -191,7 +194,9 @@ export class DiscoveryAgent implements Agent {
 				messages: workflowMessages,
 				stream: false,
 				tools: tools.map((t) => t.schema),
-				tool_choice: 'auto'
+				tool_choice: 'auto',
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 
 			const message = res.choices[0].message;

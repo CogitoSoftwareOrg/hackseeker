@@ -414,7 +414,9 @@ export class LandingAgent implements Agent {
 			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
 				messages,
-				stream: false
+				stream: false,
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 
 			const content = res.choices[0].message.content || '';
@@ -441,7 +443,9 @@ export class LandingAgent implements Agent {
 			const res = await llm.chat.completions.create({
 				model: AGENT_MODEL,
 				messages,
-				stream: true
+				stream: true,
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 
 			return new ReadableStream({
@@ -473,7 +477,9 @@ export class LandingAgent implements Agent {
 				messages: workflowMessages,
 				stream: false,
 				tools: tools.map((t) => t.schema),
-				tool_choice: 'auto'
+				tool_choice: 'auto',
+				posthogDistinctId: dynamicArgs.userId as string,
+				posthogTraceId: dynamicArgs.traceId as string
 			});
 
 			const message = res.choices[0].message;

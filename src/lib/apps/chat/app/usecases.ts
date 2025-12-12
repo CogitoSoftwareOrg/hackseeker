@@ -48,7 +48,7 @@ export class ChatAppImpl implements ChatApp {
 		const chat = await this.getChat(chatId);
 
 		if (chat.data.status === ChatsStatusOptions.empty) {
-			this.nameChat(chatId, query);
+			this.nameChat(chatId, query, chat.data.user);
 
 			await pb.collection(Collections.Chats).update(chatId, {
 				status: ChatsStatusOptions.going
@@ -124,12 +124,13 @@ export class ChatAppImpl implements ChatApp {
 		return messages;
 	}
 
-	private async nameChat(chatId: string, query: string): Promise<void> {
+	private async nameChat(chatId: string, query: string, userId: string): Promise<void> {
+		const traceId = getActiveTraceId();
 		const name = await this.agents['name'].run({
 			history: [{ role: 'user', content: query }],
 			knowledge: '',
 			tools: [],
-			dynamicArgs: {}
+			dynamicArgs: { traceId, userId }
 		});
 
 		await pb.collection(Collections.Chats).update(chatId, {

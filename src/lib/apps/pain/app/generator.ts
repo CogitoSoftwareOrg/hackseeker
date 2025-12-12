@@ -1,5 +1,6 @@
 import { Collections, pb } from '$lib';
 import type { Agent } from '$lib/shared/server';
+import { getActiveTraceId } from '@langfuse/tracing';
 
 import type { GenPainLandingCmd, GenPainPdfCmd, PainGenerator, Renderer, GenMode } from '../core';
 
@@ -13,6 +14,7 @@ export class PainGeneratorImpl implements PainGenerator {
 	) {}
 
 	async genPdf(cmd: GenPainPdfCmd): Promise<void> {
+		const traceId = getActiveTraceId();
 		const { history, knowledge } = await this.preparator.prepare(
 			'pdf',
 			cmd.chatId,
@@ -26,7 +28,7 @@ export class PainGeneratorImpl implements PainGenerator {
 			tools: [],
 			history,
 			knowledge,
-			dynamicArgs: {}
+			dynamicArgs: { traceId, userId: cmd.userId }
 		});
 		const pdf = await this.renderer.render(pdfContent);
 
@@ -36,6 +38,7 @@ export class PainGeneratorImpl implements PainGenerator {
 	}
 
 	async genLanding(cmd: GenPainLandingCmd): Promise<void> {
+		const traceId = getActiveTraceId();
 		const { history, knowledge } = await this.preparator.prepare(
 			'landing',
 			cmd.chatId,
@@ -49,7 +52,7 @@ export class PainGeneratorImpl implements PainGenerator {
 			tools: [],
 			history,
 			knowledge,
-			dynamicArgs: {}
+			dynamicArgs: { traceId, userId: cmd.userId }
 		});
 
 		const data = new FormData();

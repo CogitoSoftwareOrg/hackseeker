@@ -1,6 +1,7 @@
 import type { ChatApp } from '$lib/apps/chat/core';
 import { PainsStatusOptions } from '$lib/shared';
 import type { Agent, Tool } from '$lib/shared/server';
+import { getActiveTraceId } from '@langfuse/tracing';
 
 import {
 	type Pain,
@@ -34,6 +35,7 @@ export class PainAskerImpl implements PainAsker {
 			cmd.userId,
 			cmd.query
 		);
+		const traceId = getActiveTraceId();
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -54,7 +56,8 @@ export class PainAskerImpl implements PainAsker {
 			knowledge,
 			dynamicArgs: {
 				userId: cmd.userId,
-				chatId: cmd.chatId
+				chatId: cmd.chatId,
+				traceId
 			}
 		});
 
@@ -71,6 +74,7 @@ export class PainAskerImpl implements PainAsker {
 			cmd.userId,
 			cmd.query
 		);
+		const traceId = getActiveTraceId();
 		const agent = this.agents[cmd.mode];
 
 		// @ts-expect-error zodFunction is not typed
@@ -97,7 +101,8 @@ export class PainAskerImpl implements PainAsker {
 						knowledge,
 						dynamicArgs: {
 							userId: cmd.userId,
-							chatId: cmd.chatId
+							chatId: cmd.chatId,
+							traceId
 						}
 					});
 					const reader = stream.getReader();
