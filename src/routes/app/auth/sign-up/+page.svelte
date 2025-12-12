@@ -1,9 +1,12 @@
 <script lang="ts">
+	import posthog from 'posthog-js';
+	import { AlertCircle } from 'lucide-svelte';
+
 	import { goto, invalidate } from '$app/navigation';
 	import { pb } from '$lib';
 	import ThemeController from '$lib/shared/ui/ThemeController.svelte';
+
 	import Oauth from '../Oauth.svelte';
-	import { AlertCircle } from 'lucide-svelte';
 
 	let username = $state('');
 	let email = $state('');
@@ -42,6 +45,10 @@
 
 			await pb!.collection('users').authWithPassword(email, password, {
 				expand: ''
+			});
+			posthog.capture('signed_up', {
+				email: email,
+				name: username
 			});
 
 			await goto('/app');

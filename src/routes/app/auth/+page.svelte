@@ -36,8 +36,6 @@
 			const target = e.currentTarget as HTMLElement;
 			const provider = target.dataset.provider!;
 
-			posthog.capture('oauth_started', { provider });
-
 			const res = await pb.collection('users').authWithOAuth2({
 				provider,
 				query: { expand: '', requestKey: 'oauth2' },
