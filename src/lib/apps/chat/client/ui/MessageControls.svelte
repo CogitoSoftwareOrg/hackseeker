@@ -1,22 +1,60 @@
 <script lang="ts">
-	import { Send, Sparkles } from 'lucide-svelte';
+	import { Send, Paperclip } from 'lucide-svelte';
 	import type { ClassValue } from 'svelte/elements';
+	import { MediaQuery } from 'svelte/reactivity';
 
 	import { Button } from '$lib/shared/ui';
-	import type { MessagesResponse } from '$lib';
+	import {
+		// SourcesStatusOptions,
+		type MessagesResponse
+	} from '$lib';
+	// import { sourceApi, SourceWidget } from '$lib/apps/source/client';
+	// import { sourcesStore } from '$lib/apps/source/client';
+	// import { userStore } from '$lib/apps/user/client';
+
+	// const MAX_ATTACHMENTS = 5;
 
 	interface Props {
+		chatId: string;
 		messages: MessagesResponse[];
 		disabled?: boolean;
 		class?: ClassValue;
-		onSend: (content: string) => void | Promise<void>;
+		onSend: (content: string, sourceIds: string[]) => void | Promise<void>;
 	}
 
-	const { messages, disabled = false, class: className, onSend }: Props = $props();
+	const { chatId, messages, disabled = false, class: className, onSend }: Props = $props();
+
+	// const sources = $derived(sourcesStore.sources);
+	// const user = $derived(userStore.user);
 
 	let content = $state('');
 	let isSending = $state(false);
 	let textareaElement: HTMLTextAreaElement | undefined = $state();
+	let fileInputElement: HTMLInputElement | undefined = $state();
+
+	// Get the actual source objects from the store
+	// const attachedSources = $derived(
+	// 	sources.filter(
+	// 		(s) => (s.metadata as any)?.chatId === chatId && s.status !== SourcesStatusOptions.used
+	// 	)
+	// );
+	// const uploadingSources = $derived(
+	// 	attachedSources.filter((s) => s.status !== SourcesStatusOptions.indexed)
+	// );
+
+	// // Check if all attached sources are indexed
+	// const allSourcesReady = $derived(
+	// 	attachedSources.length === 0 ||
+	// 		attachedSources.every((s) => s.status === SourcesStatusOptions.indexed)
+	// );
+
+	// // Check if any source has error
+	// const hasSourceError = $derived(
+	// 	attachedSources.some((s) => s.status === SourcesStatusOptions.error)
+	// );
+
+	// Check if any files are still uploading
+	// const isUploading = $derived(uploadingSources.length > 0);
 
 	// Constants for autogrow behavior
 	const MIN_HEIGHT = 24; // ~1 line
@@ -25,11 +63,16 @@
 	const canSend = $derived.by(() => {
 		if (!content.trim()) return false;
 		if (isSending) return false;
+		// if (isUploading) return false;
+		// if (!allSourcesReady) return false;
+		// if (hasSourceError) return false;
 
 		if (messages.length === 0) return true;
 		const lastMessage = messages[messages.length - 1];
 		return lastMessage.role === 'ai' && lastMessage.status === 'final';
 	});
+
+	// const canAttach = $derived(attachedSources.length < MAX_ATTACHMENTS && !disabled && !isSending);
 
 	// Auto-resize textarea based on content
 	function adjustTextareaHeight() {
@@ -63,13 +106,53 @@
 		adjustTextareaHeight();
 	}
 
+	function handleAttachClick() {
+		fileInputElement?.click();
+	}
+
+	async function handleFileSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const files = input.files;
+		if (!files?.length) return;
+
+		// const remainingSlots = MAX_ATTACHMENTS - attachedSources.length;
+		// const filesToAdd = Array.from(files).slice(0, remainingSlots);
+
+		// Upload files in parallel
+		// await Promise.all(
+		// 	filesToAdd.map(async (file) => {
+		// 		try {
+		// 			await sourceApi.addSource(
+		// 				{ title: file.name, user: user?.id, metadata: { chatId } },
+		// 				file
+		// 			);
+		// 		} catch (error) {
+		// 			console.error('Failed to upload file:', error);
+		// 		} finally {
+		// 		}
+		// 	})
+		// );
+
+		// Reset input
+		input.value = '';
+	}
+
+	function handleRemoveSource(sourceId: string) {
+		console.log('remove source', sourceId);
+	}
+
 	async function handleSend() {
 		if (!canSend) return;
 
 		isSending = true;
 		try {
-			await onSend(content.trim());
+			await onSend(
+				content.trim(),
+				// attachedSources.map((s) => s.id)
+				[]
+			);
 			content = '';
+
 			if (textareaElement) textareaElement.style.height = `${MIN_HEIGHT}px`;
 		} catch (error) {
 			console.error('Failed to send message:', error);
@@ -78,8 +161,11 @@
 		}
 	}
 
+	const mobile = $derived(new MediaQuery('(max-width: 768px)'));
+
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' && !e.shiftKey) {
+		// On mobile, Enter creates new line; on desktop, Enter sends (Shift+Enter for new line)
+		if (e.key === 'Enter' && !e.shiftKey && !mobile.current) {
 			e.preventDefault();
 			handleSend();
 		}
@@ -87,7 +173,38 @@
 </script>
 
 <div class={['mx-auto w-full max-w-3xl', className]}>
-	<div class={['flex items-end gap-2 border rounded-3xl pl-4', canSend ? 'border-primary' : '']}>
+	<!-- Attached sources and uploading files -->
+	<!-- {#if attachedSources.length > 0 || uploadingSources.length > 0}
+		<div class="mb-2 flex flex-wrap gap-2">
+			{#each attachedSources as source (source.id)}
+				<SourceWidget {source} onRemove={handleRemoveSource} />
+			{/each}
+		</div>
+	{/if} -->
+
+	<div class={['flex items-end gap-1 border rounded-3xl', canSend ? 'border-primary' : '']}>
+		<!-- Hidden file input -->
+		<input
+			bind:this={fileInputElement}
+			type="file"
+			multiple
+			accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml"
+			onchange={handleFileSelect}
+			class="hidden"
+		/>
+
+		<!-- Attach button -->
+		<Button
+			color="neutral"
+			variant="ghost"
+			circle
+			onclick={handleAttachClick}
+			disabled={disabled || isSending}
+			class="shrink-0"
+		>
+			<Paperclip class="size-5" />
+		</Button>
+
 		<textarea
 			bind:this={textareaElement}
 			bind:value={content}

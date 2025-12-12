@@ -1,11 +1,23 @@
 import { Collections, MessagesStatusOptions, pb, type Create, type MessagesResponse } from '$lib';
 import type { MessageChunk } from '$lib/apps/chat/core';
 
+const PAGE_SIZE = 50;
 class MessagesStore {
-	_messages: MessagesResponse[] = $state([]);
+	loading = $state(true);
+	page = $state(1);
+	totalPages = $state(0);
+	totalItems = $state(0);
+
+	private chatId: string | null = null;
+	private _messages: MessagesResponse[] = $state([]);
 	messages = $derived(this._messages);
 
-	set(messages: MessagesResponse[]) {
+	set(messages: MessagesResponse[], page: number, totalPages: number, totalItems: number) {
+		this.loading = false;
+
+		this.page = page;
+		this.totalPages = totalPages;
+		this.totalItems = totalItems;
 		this._messages = messages;
 	}
 
@@ -22,11 +34,31 @@ class MessagesStore {
 	}
 
 	async load(chatId: string) {
-		const messages = await pb.collection(Collections.Messages).getFullList({
+		const res = await pb.collection(Collections.Messages).getList(1, PAGE_SIZE, {
 			filter: `chat = "${chatId}"`,
-			sort: 'created'
+			sort: '-created'
 		});
-		this._messages = messages;
+		res.items.reverse();
+
+		this.chatId = chatId;
+		return res;
+	}
+
+	async loadNextPage() {
+		if (this.page >= this.totalPages) return;
+
+		this.loading = true;
+		const res = await pb.collection(Collections.Messages).getList(this.page + 1, PAGE_SIZE, {
+			filter: `chat = "${this.chatId}"`,
+			sort: '-created'
+		});
+		res.items.reverse();
+
+		this._messages = [...res.items, ...this._messages];
+		this.page = res.page;
+		this.totalPages = res.totalPages;
+		this.totalItems = res.totalItems;
+		this.loading = false;
 	}
 
 	addOptimisticMessage(dto: Create<Collections.Messages>) {

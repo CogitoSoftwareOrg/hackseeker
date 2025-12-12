@@ -1,9 +1,11 @@
 import { pb, type UsersResponse, type UserExpand, Collections } from '$lib';
+import { chatsStore } from '$lib/apps/chat/client';
+import { painsStore } from '$lib/apps/pain/client';
 
 export async function globalUserLoad() {
 	console.log('globalUserLoad', pb.authStore.isValid);
 	if (!pb.authStore.isValid) {
-		return { user: null, sub: null, chats: [], pains: [] };
+		return { user: null, sub: null, chatsRes: null, painsRes: null };
 	}
 
 	try {
@@ -11,19 +13,13 @@ export async function globalUserLoad() {
 		const user = res.record as UsersResponse<UserExpand>;
 		const sub = user.expand?.subs_via_user?.at(0) ?? null;
 
-		const chats = await pb.collection(Collections.Chats).getFullList({
-			filter: `user = "${user.id}"`,
-			sort: '-created'
-		});
-		const pains = await pb.collection(Collections.Pains).getFullList({
-			filter: `user = "${user.id}"`,
-			sort: '-created'
-		});
+		const chatsRes = await chatsStore.load(user.id);
+		const painsRes = await painsStore.load(user.id);
 
-		return { user, sub, chats, pains };
+		return { user, sub, chatsRes, painsRes };
 	} catch (error) {
 		console.error(error, 'Failed to refresh user data!');
 		pb.authStore.clear();
-		return { user: null, sub: null, chats: [], pains: [] };
+		return { user: null, sub: null, chatsRes: null, painsRes: null };
 	}
 }

@@ -1,12 +1,33 @@
 import { Collections, pb, type PainsResponse } from '$lib';
 
-class PainsStore {
-	_pains: PainsResponse[] = $state([]);
+const PAGE_SIZE = 200;
 
+class PainsStore {
+	loading = $state(true);
+	page = $state(1);
+	totalPages = $state(0);
+	totalItems = $state(0);
+
+	private userId: string | null = null;
+
+	private _pains: PainsResponse[] = $state([]);
 	pains = $derived(this._pains);
 
-	set(pains: PainsResponse[]) {
+	set(pains: PainsResponse[], page: number, totalPages: number, totalItems: number) {
+		this.loading = false;
 		this._pains = pains;
+		this.page = page;
+		this.totalPages = totalPages;
+		this.totalItems = totalItems;
+	}
+
+	async load(userId: string) {
+		const res = await pb.collection(Collections.Pains).getList(1, PAGE_SIZE, {
+			filter: `user = "${userId}"`,
+			sort: '-created'
+		});
+		this.userId = userId;
+		return res;
 	}
 
 	getByChatId(chatId: string) {

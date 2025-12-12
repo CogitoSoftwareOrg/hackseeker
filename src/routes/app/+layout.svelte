@@ -2,7 +2,7 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { Plus, Settings, Heart, MessageSquare, Menu, PanelRight } from 'lucide-svelte';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { MediaQuery, SvelteMap } from 'svelte/reactivity';
 
 	import { chatApi, chatsStore, ChatHeader } from '$lib/apps/chat/client';
 	import { uiStore, swipeable } from '$lib/shared/ui';
@@ -22,7 +22,12 @@
 	const sidebarOpen = $derived(uiStore.sidebarOpen);
 	const sidebarExpanded = $derived(uiStore.sidebarExpanded);
 
+	const mobile = new MediaQuery('(max-width: 768px)');
+	let layoutContainer: HTMLDivElement | undefined = $state();
+
 	const chats = $derived(chatsStore.chats);
+	const hasMoreChats = $derived(chatsStore.page < chatsStore.totalPages);
+	const chatsLoading = $derived(chatsStore.loading);
 	const chatModes = $derived.by(() => {
 		const m = new SvelteMap<string, AskMode>();
 		for (const chat of chats) {
@@ -31,6 +36,23 @@
 			m.set(chat.id, validationPains.length > 0 ? 'validation' : 'discovery');
 		}
 		return m;
+	});
+
+	// Intersection observer for infinite scroll
+	let loaderRef: HTMLDivElement | undefined = $state();
+
+	$effect(() => {
+		if (!loaderRef || !hasMoreChats) return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && !chatsLoading) {
+					chatsStore.loadNextPage();
+				}
+			},
+			{ threshold: 0.1 }
+		);
+		observer.observe(loaderRef);
+		return () => observer.disconnect();
 	});
 
 	const discoveryChats = $derived(chats.filter((c) => chatModes.get(c.id) === 'discovery'));
@@ -42,11 +64,15 @@
 	const currentChat = $derived(chats.find((c) => c.id === currentChatId));
 
 	$effect(() => {
-		globalPromise.then(({ user, sub, chats, pains }) => {
+		globalPromise.then(({ user, sub, chatsRes, painsRes }) => {
 			if (user) userStore.user = user;
 			if (sub) subStore.sub = sub;
-			if (chats) chatsStore.set(chats);
-			if (pains) painsStore.set(pains);
+			if (chatsRes) {
+				chatsStore.set(chatsRes.items, chatsRes.page, chatsRes.totalPages, chatsRes.totalItems);
+			}
+			if (painsRes) {
+				painsStore.set(painsRes.items, painsRes.page, painsRes.totalPages, painsRes.totalItems);
+			}
 		});
 	});
 
@@ -174,6 +200,13 @@
 				</li>
 			{/each}
 		</ul>
+
+		<!-- Infinite scroll loader -->
+		{#if hasMoreChats}
+			<div bind:this={loaderRef} class="flex justify-center py-4">
+				<span class="loading loading-spinner loading-sm"></span>
+			</div>
+		{/if}
 	</div>
 {/snippet}
 
