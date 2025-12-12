@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
+	import { Heart, Shield, AlertCircle } from 'lucide-svelte';
+	import posthog from 'posthog-js';
+
 	import { pb } from '$lib';
 	import ThemeController from '$lib/shared/ui/ThemeController.svelte';
-	import { Heart, Shield, AlertCircle } from 'lucide-svelte';
 
 	interface Props {
 		error?: any | null;
@@ -34,10 +36,7 @@
 			const target = e.currentTarget as HTMLElement;
 			const provider = target.dataset.provider!;
 
-			// Optional: posthog analytics (uncomment if posthog is installed)
-			// if (typeof posthog !== 'undefined') {
-			// 	posthog.capture('oauth_started', { provider });
-			// }
+			posthog.capture('oauth_started', { provider });
 
 			const res = await pb.collection('users').authWithOAuth2({
 				provider,
@@ -49,10 +48,7 @@
 				}
 			});
 
-			// Optional: posthog analytics (uncomment if posthog is installed)
-			// if (typeof posthog !== 'undefined') {
-			// 	posthog.capture('oauth_completed', { provider });
-			// }
+			posthog.capture('oauth_completed', { provider });
 
 			await goto('/app/stories');
 			await invalidate('app:global');

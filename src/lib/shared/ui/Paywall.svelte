@@ -242,7 +242,7 @@
 
 				<!-- CTA Button -->
 				<Button
-					variant={plan.highlighted ? 'primary' : 'outline'}
+					variant={plan.highlighted ? 'solid' : 'outline'}
 					class="w-full"
 					disabled={loading}
 					onclick={() => checkoutSession(plan.lookupPrefix)}
