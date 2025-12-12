@@ -100,6 +100,14 @@ class MessagesStore {
 	unsubscribe() {
 		pb.collection(Collections.Messages).unsubscribe();
 	}
+
+	clear() {
+		this._messages = [];
+		this.page = 1;
+		this.totalPages = 0;
+		this.totalItems = 0;
+		this.loading = true;
+	}
 }
 
 export const messagesStore = new MessagesStore();

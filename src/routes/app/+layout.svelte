@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import { Plus, Settings, Heart, MessageSquare, Menu, PanelRight } from 'lucide-svelte';
 	import { MediaQuery, SvelteMap } from 'svelte/reactivity';
+	import posthog from 'posthog-js';
+	import { onMount } from 'svelte';
 
 	import { chatApi, chatsStore, ChatHeader } from '$lib/apps/chat/client';
 	import { uiStore, swipeable } from '$lib/shared/ui';
@@ -15,7 +17,6 @@
 
 	import UpdateApp from './UpdateApp.svelte';
 	import Splash from './Splash.svelte';
-	import { onMount } from 'svelte';
 
 	const { children, data } = $props();
 	const globalPromise = $derived(data.globalPromise);
@@ -76,6 +77,19 @@
 			if (painsRes) {
 				painsStore.set(painsRes.items, painsRes.page, painsRes.totalPages, painsRes.totalItems);
 			}
+		});
+	});
+
+	// Posthog identify and set person
+	$effect(() => {
+		console.log(user);
+		console.log(sub);
+
+		if (!user || !sub) return;
+		posthog.identify(user.id);
+		posthog.people.set({
+			...user,
+			plan: sub.tariff
 		});
 	});
 

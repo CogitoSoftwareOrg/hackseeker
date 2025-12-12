@@ -22,7 +22,7 @@ pb.authStore.onChange((token: string, record: AuthRecord) => {
 		userStore.user = null;
 		userStore.token = null;
 		subStore.sub = null;
-		chatsStore.set([]);
-		messagesStore.set([]);
+		chatsStore.clear();
+		messagesStore.clear();
 	}
 }, false);

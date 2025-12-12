@@ -81,6 +81,14 @@ class ChatsStore {
 	unsubscribe() {
 		pb.collection(Collections.Chats).unsubscribe();
 	}
+
+	clear() {
+		this._chats = [];
+		this.page = 1;
+		this.totalPages = 0;
+		this.totalItems = 0;
+		this.loading = true;
+	}
 }
 
 export const chatsStore = new ChatsStore();
