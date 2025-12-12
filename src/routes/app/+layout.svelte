@@ -87,7 +87,8 @@
 
 		if (!user || !sub) return;
 		posthog.identify(user.id, {
-			...user,
+			email: user.email,
+			name: user.name,
 			plan: sub.tariff
 		});
 	});
